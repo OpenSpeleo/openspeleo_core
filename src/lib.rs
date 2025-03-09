@@ -1,7 +1,7 @@
 use pyo3::{
     exceptions::PyValueError,
     prelude::*,
-    types::{PyDict, PyList},
+    types::{PyDict, PyFloat, PyList, PyString},
 };
 use quick_xml::events::Event;
 use quick_xml::Reader;
@@ -154,7 +154,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
         buf.clear();
     }
 
-    root.map(|mut r| {
+    root.map(|r| {
         let mut root_obj = Map::new();
         root_obj.insert(root_name, r);
         Value::Object(root_obj)
@@ -261,26 +261,38 @@ fn dict_to_xml_str(data: &Bound<'_, PyDict>, root_name: &str) -> PyResult<String
 
 // Updated helper functions for Python/Rust type conversion
 
+// Function to handle conversion of serde_json::Value
 fn value_to_pyobject(value: &Value, py: Python<'_>) -> PyResult<PyObject> {
     match value {
-        Value::Null => Ok(py.None().into_py(py)),
-        Value::Bool(b) => Ok(b.into_py(py)),
-        Value::Number(n) => Ok(n.as_f64().unwrap().into_py(py)),
-        Value::String(s) => Ok(s.into_py(py)),
+        Value::Null => Ok(py.None()),
+        Value::Bool(b) => Ok(b.into_pyobject(py).unwrap().to_owned().into()),
+        Value::Number(num) => {
+            if let Some(i) = num.as_i64() {
+                Ok(i.into_pyobject(py).unwrap().into())
+            } else if let Some(f) = num.as_f64() {
+                Ok(PyFloat::new(py, f).into())
+            } else {
+                Ok(PyString::new(py, &num.to_string()).into())
+            }
+        }
+        Value::String(s) => Ok(PyString::new(py, s).into()),
         Value::Array(arr) => {
-            let list = PyList::empty_bound(py);
+            let list = PyList::empty(py);
             for item in arr {
                 list.append(value_to_pyobject(item, py)?)?;
             }
-            Ok(list.into_py(py))
+            Ok(list.into_pyobject(py).unwrap().to_owned().into())
         }
         Value::Object(obj) => {
-            let dict = PyDict::new_bound(py);
+            let dict = PyDict::new(py);
             for (k, v) in obj {
                 dict.set_item(k, value_to_pyobject(v, py)?)?;
             }
-            Ok(dict.into_py(py))
+            Ok(dict.into_pyobject(py).unwrap().to_owned().into())
         }
+        // Handle other serde_json::Value types as needed
+        // ...
+        _ => Ok(PyString::new(py, "Unsupported serde_json::Value type").into()),
     }
 }
 
