@@ -1,5 +1,5 @@
 [package]
-name = "xml_dict"
+name = "openspeleo_core"
 version = "0.1.0"
 edition = "2021"
 

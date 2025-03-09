@@ -3,7 +3,7 @@ requires = ["maturin>=1.8,<1.9"]
 build-backend = "maturin"
 
 [project]
-name = "xml_dict"
+name = "openspeleo_core"
 version = "0.1.0"
 description = "A Rust library to convert XML to Python dict and back"
 authors = [{ name = "Jonathan Dekhtiar", email = "jonathan@dekhtiar.com" }]
@@ -35,4 +35,4 @@ test = [
 ]
 
 [tool.maturin]
-module-name = "xml_dict"
+module-name = "openspeleo_core"

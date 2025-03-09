@@ -333,7 +333,7 @@ fn pyobject_to_value(obj: &Bound<'_, PyAny>) -> PyResult<Value> {
 }
 
 #[pymodule]
-fn xml_dict(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn openspeleo_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(xml_str_to_dict, m)?)?;
     m.add_function(wrap_pyfunction!(dict_to_xml_str, m)?)?;
     Ok(())
