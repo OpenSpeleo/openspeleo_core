@@ -272,23 +272,32 @@ fn value_to_pyobject(value: &Value, py: Python<'_>) -> PyResult<PyObject> {
             } else if let Some(f) = num.as_f64() {
                 Ok(PyFloat::new(py, f).into())
             } else {
-                Ok(PyString::new(py, &num.to_string()).into())
+                Err(pyo3::exceptions::PyValueError::new_err("Invalid number"))
             }
         }
         Value::String(s) => Ok(PyString::new(py, s).into()),
+        // Value::Array(arr) => {
+        //     let py_list = PyList::new(py, &[] as &[PyObject]).expect("Invalid `ExactSizeIterator`");
+        //     for item in arr {
+        //         let py_item = value_to_pyobject(py, item)?;
+        //         py_list.append(py_item)?;
+        //     }
+        //     py_list.into_py_any(py)
+        // }
         Value::Array(arr) => {
             let list = PyList::empty(py);
             for item in arr {
                 list.append(value_to_pyobject(item, py)?)?;
             }
-            Ok(list.into_pyobject(py).unwrap().to_owned().into())
+            Ok(list.into())
         }
+        // Value::Object(_) => value_to_pydict(py, val),
         Value::Object(obj) => {
             let dict = PyDict::new(py);
             for (k, v) in obj {
                 dict.set_item(k, value_to_pyobject(v, py)?)?;
             }
-            Ok(dict.into_pyobject(py).unwrap().to_owned().into())
+            Ok(dict.into())
         }
         // Handle other serde_json::Value types as needed
         // ...
