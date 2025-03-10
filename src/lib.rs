@@ -24,7 +24,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
                 let name = e.name().as_ref().to_vec();
-                let name = String::from_utf8_lossy(&name).to_string();
+                let name = String::from_utf8_lossy(&name).into_owned();
 
                 if root_name.is_empty() {
                     root_name = name.clone();
@@ -84,8 +84,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                             arr.push(new_value);
                         } else {
                             let existing_val = existing.take();
-                            parent
-                                .insert(name.clone(), Value::Array(vec![existing_val, new_value]));
+                            parent.insert(name, Value::Array(vec![existing_val, new_value]));
                         }
                     } else {
                         parent.insert(name, new_value);
@@ -96,7 +95,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::Empty(e)) => {
                 let name = e.name().as_ref().to_vec();
-                let name = String::from_utf8_lossy(&name).to_string();
+                let name = String::from_utf8_lossy(&name).into_owned();
 
                 if root_name.is_empty() {
                     root_name = name.clone();
@@ -131,8 +130,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                             arr.push(new_value);
                         } else {
                             let existing_val = existing.take();
-                            parent
-                                .insert(name.clone(), Value::Array(vec![existing_val, new_value]));
+                            parent.insert(name, Value::Array(vec![existing_val, new_value]));
                         }
                     } else {
                         parent.insert(name, new_value);
@@ -268,7 +266,7 @@ fn value_to_pyobject(value: &Value, py: Python<'_>) -> PyResult<PyObject> {
         Value::Bool(b) => Ok(b.into_pyobject(py).unwrap().to_owned().into()),
         Value::Number(num) => {
             if let Some(i) = num.as_i64() {
-                Ok(i.into_pyobject(py).unwrap().into())
+                Ok(i.into_pyobject(py).unwrap().to_owned().into())
             } else if let Some(f) = num.as_f64() {
                 Ok(PyFloat::new(py, f).into())
             } else {
@@ -291,6 +289,7 @@ fn value_to_pyobject(value: &Value, py: Python<'_>) -> PyResult<PyObject> {
             }
             Ok(list.into())
         }
+
         // Value::Object(_) => value_to_pydict(py, val),
         Value::Object(obj) => {
             let dict = PyDict::new(py);
@@ -315,17 +314,29 @@ fn pyobject_to_value(obj: &Bound<'_, PyAny>) -> PyResult<Value> {
     } else if obj.is_none() {
         Ok(Value::Null)
     } else if let Ok(list) = obj.downcast::<PyList>() {
-        let mut arr = Vec::new();
-        for item in list.iter() {
-            arr.push(pyobject_to_value(&item)?);
-        }
+        // let mut arr = Vec::new();
+        // for item in list.iter() {
+        //     arr.push(pyobject_to_value(&item)?);
+        // }
+        let arr: Vec<_> = list
+            .iter()
+            .map(|item| pyobject_to_value(&item))
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(Value::Array(arr))
     } else if let Ok(dict) = obj.downcast::<PyDict>() {
-        let mut map = Map::new();
-        for (k, v) in dict.iter() {
-            let key: String = k.extract()?;
-            map.insert(key, pyobject_to_value(&v)?);
-        }
+        // let mut map = Map::new();
+        // for (k, v) in dict.iter() {
+        //     let key: String = k.extract()?;
+        //     map.insert(key, pyobject_to_value(&v)?);
+        // }
+        let map: Map<String, Value> = dict
+            .iter()
+            .filter_map(|(k, v)| {
+                let key = k.extract().ok();
+                let value = pyobject_to_value(&v).ok();
+                key.zip(value).map(|(k, v)| (k, v))
+            })
+            .collect();
         Ok(Value::Object(map))
     } else {
         Err(PyValueError::new_err("Unsupported Python type").into())
@@ -346,25 +357,26 @@ fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
     let file = std::fs::File::open(path).map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open file: {}", e))
     })?;
+    let reader = std::io::BufReader::new(file);
 
-    let mut archive = zip::ZipArchive::new(file).map_err(|e| {
+    let mut archive = zip::ZipArchive::new(reader).map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open zip archive: {}", e))
     })?;
 
-    let mut file = archive.by_name("Data.xml").map_err(|e| {
+    let mut xml_file = archive.by_name("Data.xml").map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyIOError, _>(format!(
             "Failed to find file in zip archive: {}",
             e
         ))
     })?;
 
-    let mut xml_contents = Vec::new();
-    std::io::copy(&mut file, &mut xml_contents).map_err(|e| {
+    let mut xml_contents_vec = Vec::new();
+    std::io::copy(&mut xml_file, &mut xml_contents_vec).map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to read file: {}", e))
     })?;
 
     // Re-Allocation to change type from Vec<u8> to String
-    let xml_contents = String::from_utf8(xml_contents).map_err(|e| {
+    let xml_contents = String::from_utf8(xml_contents_vec).map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyUnicodeError, _>(format!(
             "Failed to convert bytes to string: {}",
             e
@@ -372,10 +384,10 @@ fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
     })?;
 
     // Convert str to dict
-    let value = parse_xml(xml_contents.as_str(), true)
+    let data = parse_xml(xml_contents.as_str(), true)
         .map_err(|e| PyValueError::new_err(format!("XML parsing error: {}", e)))?;
 
-    Python::with_gil(|py| value_to_pyobject(&value, py))
+    Python::with_gil(|py| value_to_pyobject(&data, py))
 }
 
 #[pymodule]
