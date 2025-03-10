@@ -332,9 +332,56 @@ fn pyobject_to_value(obj: &Bound<'_, PyAny>) -> PyResult<Value> {
     }
 }
 
+/// Reads the contents of the "Data.xml" file from a zip archive.
+///
+/// # Arguments
+///
+/// * `path`: The path to the zip archive.
+///
+/// # Returns
+///
+/// The contents of the "Data.xml" file as a string.
+#[pyfunction]
+fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
+    let file = std::fs::File::open(path).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open file: {}", e))
+    })?;
+
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open zip archive: {}", e))
+    })?;
+
+    let mut file = archive.by_name("Data.xml").map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyIOError, _>(format!(
+            "Failed to find file in zip archive: {}",
+            e
+        ))
+    })?;
+
+    let mut xml_contents = Vec::new();
+    std::io::copy(&mut file, &mut xml_contents).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to read file: {}", e))
+    })?;
+
+    // Re-Allocation to change type from Vec<u8> to String
+    let xml_contents = String::from_utf8(xml_contents).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyUnicodeError, _>(format!(
+            "Failed to convert bytes to string: {}",
+            e
+        ))
+    })?;
+
+    // Convert str to dict
+    let value = parse_xml(xml_contents.as_str(), true)
+        .map_err(|e| PyValueError::new_err(format!("XML parsing error: {}", e)))?;
+
+    Python::with_gil(|py| value_to_pyobject(&value, py))
+}
+
 #[pymodule]
 fn openspeleo_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(xml_str_to_dict, m)?)?;
     m.add_function(wrap_pyfunction!(dict_to_xml_str, m)?)?;
+    m.add_function(wrap_pyfunction!(load_ariane_tml_file_to_dict, m)?)?;
     Ok(())
 }
