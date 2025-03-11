@@ -18,3 +18,7 @@ target/
 /*.json
 
 .DS_Store
+
+*.so
+
+*.pyc
