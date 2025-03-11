@@ -112,15 +112,18 @@ pub fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                     })
                     .collect();
 
-                let mut obj = Map::new();
-                for (k, v) in attrs {
-                    obj.insert(k, v);
-                }
-
                 let new_value = if keep_null {
                     Value::Null
                 } else {
-                    Value::Object(obj)
+                    if attrs.is_empty() {
+                        continue;
+                    } else {
+                        let mut obj = Map::new();
+                        for (k, v) in attrs {
+                            obj.insert(k, v);
+                        }
+                        Value::Object(obj)
+                    }
                 };
 
                 if let Some(Value::Object(ref mut parent)) = current_value {

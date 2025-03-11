@@ -77,7 +77,7 @@ pub fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
     })?;
 
     // Convert str to dict
-    let data = utils::parse_xml(xml_contents.as_str(), true)
+    let data = utils::parse_xml(xml_contents.as_str(), false)
         .map_err(|e| PyValueError::new_err(format!("XML parsing error: {}", e)))?;
 
     Python::with_gil(|py| utils::value_to_pyobject(&data, py))
