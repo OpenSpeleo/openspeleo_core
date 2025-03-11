@@ -9,10 +9,12 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 // XML to Dict implementation with optional null field preservation
-
 pub fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
+    // Create a new XML reader
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(true);
+
+    // Initialize variables to keep track of the parsing state
     let mut stack: Vec<(String, Option<Value>, HashMap<String, Value>)> = Vec::new();
     let mut root: Option<Value> = None;
     let mut current_value: Option<Value> = None;
@@ -21,11 +23,14 @@ pub fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
     let mut root_name = String::new();
 
     loop {
+        // Read the next event from the XML reader
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
+                // Handle the start of an element
                 let name = e.name().as_ref().to_vec();
                 let name = String::from_utf8_lossy(&name).into_owned();
 
+                // Set the root name if it's not already set
                 if root_name.is_empty() {
                     root_name = name.clone();
                 }
@@ -41,17 +46,20 @@ pub fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                     })
                     .collect();
 
+                // Push the current state onto the stack
                 stack.push((name, current_value, current_attrs));
                 current_attrs = attrs;
                 current_value = Some(Value::Object(Map::new()));
             }
             Ok(Event::Text(e)) => {
+                // Handle text content
                 let text = e.unescape().unwrap_or_default().to_string();
                 if !text.trim().is_empty() {
                     current_value = Some(Value::String(text));
                 }
             }
             Ok(Event::End(_)) => {
+                // Handle the end of an element
                 let (name, parent_val, parent_attrs) = stack.pop().unwrap();
                 let mut obj = match current_value.take() {
                     Some(Value::Object(m)) => m,
@@ -71,32 +79,46 @@ pub fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                 current_value = parent_val;
                 current_attrs = parent_attrs;
 
+                // Create a new value from the object
                 let new_value = if obj.len() == 1 && obj.contains_key("#text") {
                     obj.remove("#text").unwrap()
                 } else {
                     Value::Object(obj)
                 };
 
-                if let Some(Value::Object(ref mut parent)) = current_value {
-                    // Handle duplicate keys by converting to array
-                    if let Some(existing) = parent.get_mut(&name) {
-                        if let Value::Array(ref mut arr) = existing {
-                            arr.push(new_value);
+                // Check if the new value is null and if we should keep null values
+                if keep_null || new_value != Value::Null {
+                    // Check if the new value is an empty object and if we should keep null values
+                    if let Value::Object(ref obj) = new_value {
+                        if obj.is_empty() && !keep_null {
+                            continue;
+                        }
+                    }
+
+                    // Add the new value to the parent object
+                    if let Some(Value::Object(ref mut parent)) = current_value {
+                        // Handle duplicate keys by converting to array
+                        if let Some(existing) = parent.get_mut(&name) {
+                            if let Value::Array(ref mut arr) = existing {
+                                arr.push(new_value);
+                            } else {
+                                let existing_val = existing.take();
+                                parent.insert(name, Value::Array(vec![existing_val, new_value]));
+                            }
                         } else {
-                            let existing_val = existing.take();
-                            parent.insert(name, Value::Array(vec![existing_val, new_value]));
+                            parent.insert(name, new_value);
                         }
                     } else {
-                        parent.insert(name, new_value);
+                        root = Some(new_value);
                     }
-                } else {
-                    root = Some(new_value);
                 }
             }
             Ok(Event::Empty(e)) => {
+                // Handle empty elements
                 let name = e.name().as_ref().to_vec();
                 let name = String::from_utf8_lossy(&name).into_owned();
 
+                // Set the root name if it's not already set
                 if root_name.is_empty() {
                     root_name = name.clone();
                 }
@@ -112,6 +134,7 @@ pub fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                     })
                     .collect();
 
+                // Create a new value from the attributes
                 let new_value = if keep_null {
                     Value::Null
                 } else {
@@ -122,39 +145,55 @@ pub fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                         for (k, v) in attrs {
                             obj.insert(k, v);
                         }
+                        if obj.is_empty() {
+                            continue;
+                        }
                         Value::Object(obj)
                     }
                 };
 
-                if let Some(Value::Object(ref mut parent)) = current_value {
-                    // Handle duplicate keys by converting to array
-                    if let Some(existing) = parent.get_mut(&name) {
-                        if let Value::Array(ref mut arr) = existing {
-                            arr.push(new_value);
+                // Check if the new value is null and if we should keep null values
+                if keep_null || new_value != Value::Null {
+                    // Check if the new value is an empty object and if we should keep null values
+                    if let Value::Object(ref obj) = new_value {
+                        if obj.is_empty() && !keep_null {
+                            continue;
+                        }
+                    }
+
+                    // Add the new value to the parent object
+                    if let Some(Value::Object(ref mut parent)) = current_value {
+                        // Handle duplicate keys by converting to array
+                        if let Some(existing) = parent.get_mut(&name) {
+                            if let Value::Array(ref mut arr) = existing {
+                                arr.push(new_value);
+                            } else {
+                                let existing_val = existing.take();
+                                parent.insert(name, Value::Array(vec![existing_val, new_value]));
+                            }
                         } else {
-                            let existing_val = existing.take();
-                            parent.insert(name, Value::Array(vec![existing_val, new_value]));
+                            parent.insert(name, new_value);
                         }
                     } else {
-                        parent.insert(name, new_value);
+                        root = Some(new_value);
                     }
-                } else {
-                    root = Some(new_value);
                 }
             }
             Ok(Event::Eof) => break,
             Err(e) => {
+                // Handle errors
                 return Err(format!(
                     "Error at position {}: {:?}",
                     reader.buffer_position(),
                     e
-                ))
+                ));
             }
             _ => (),
         }
         buf.clear();
     }
 
+    // Create the final root object
     root.map(|r| {
         let mut root_obj = Map::new();
         root_obj.insert(root_name, r);
