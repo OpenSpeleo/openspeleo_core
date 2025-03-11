@@ -1,11 +1,12 @@
-import statistics
+import statistics  # noqa: INP001
 import time
 import zipfile
 
 import xmltodict
 from deepdiff import DeepDiff
+
 from openspeleo_core import ariane_core
-from tests.test_xml_to_dict import remove_none_values
+from openspeleo_core.legacy import remove_none_values
 
 if __name__ == "__main__":
     for filepath in [

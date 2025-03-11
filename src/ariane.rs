@@ -84,7 +84,6 @@ pub fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
 }
 
 #[pymodule]
-#[pyo3(name = "ariane")]
 pub fn ariane(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(xml_str_to_dict, m)?)?;
     m.add_function(wrap_pyfunction!(dict_to_xml_str, m)?)?;

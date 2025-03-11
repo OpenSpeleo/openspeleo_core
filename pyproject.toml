@@ -14,7 +14,6 @@ name = "openspeleo_core"
 version = "0.0.1"
 description = "A Rust backend library aiming to provide high performance implementations for OpenSpeleo project."
 authors = [{ name = "Jonathan Dekhtiar", email = "jonathan@dekhtiar.com" }]
-dependencies = []
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -25,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
