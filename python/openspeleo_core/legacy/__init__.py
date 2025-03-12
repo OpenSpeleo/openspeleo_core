@@ -1,60 +1,15 @@
-from typing import Any
+from openspeleo_core.legacy.processing import apply_key_mapping
+from openspeleo_core.legacy.processing import remove_none_values
+from openspeleo_core.legacy.xml_utils import deserialize_xmlfield_to_dict
+from openspeleo_core.legacy.xml_utils import dict_to_xml
+from openspeleo_core.legacy.xml_utils import serialize_dict_to_xmlfield
+from openspeleo_core.legacy.xml_utils import xml_to_dict
 
-
-def remove_none_values(input_data: dict | list) -> Any:
-    """
-    Recursively remove None values from a dictionary.
-    """
-    if isinstance(input_data, dict):
-        data = {}
-        for k, v in list(input_data.items()):
-            if v is None:
-                continue
-
-            if isinstance(v, (dict, list)):
-                data[k] = remove_none_values(v)
-
-            else:
-                data[k] = v
-
-        return data
-
-    if isinstance(input_data, list):
-        values = []
-        for i in input_data:
-            if i is None:
-                continue
-            if isinstance(i, (dict, list)):
-                values.append(remove_none_values(i))
-            else:
-                values.append(i)
-        return values
-
-    return input_data
-
-
-def apply_key_mapping(data: dict | list, mapping: dict) -> dict | list:
-    if not isinstance(data, (dict, list)):
-        raise TypeError(f"Unexpected type received: {type(data)}")
-
-    if isinstance(data, dict):
-        rslt = {}
-        for key, val in data.items():
-            key = mapping.get(key, key)  # noqa: PLW2901
-
-            if isinstance(val, (dict, list)):
-                rslt[key] = apply_key_mapping(val, mapping)
-            else:
-                rslt[key] = val
-        return rslt
-
-    if isinstance(data, list):
-        rslt = []
-        for val in data:
-            if isinstance(val, (dict, list)):
-                rslt.append(apply_key_mapping(val, mapping))
-            else:
-                rslt.append(val)
-        return rslt
-
-    return data
+__all__ = [
+    "apply_key_mapping",
+    "deserialize_xmlfield_to_dict",
+    "dict_to_xml",
+    "remove_none_values",
+    "serialize_dict_to_xmlfield",
+    "xml_to_dict",
+]
