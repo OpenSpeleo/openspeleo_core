@@ -5,7 +5,6 @@ use pyo3_stub_gen::define_stub_info_gatherer;
 
 mod ariane;
 mod mapping;
-mod utils;
 
 #[pymodule]
 fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
