@@ -47,6 +47,12 @@ test = [
     "xmltodict>=0.14,<0.15",
 ]
 
+[project.scripts]
+openspeleo_core = "openspeleo_core.commands.main:main"
+
+[project.entry-points."openspeleo_core.actions"]
+convert = "openspeleo_core.commands.convert:convert"
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests/"]
