@@ -1,12 +1,6 @@
-import json
-import zipfile
-from pathlib import Path
-from pprint import pprint
-
-import xmltodict
-from deepdiff import DeepDiff
-
 from openspeleo_core import mapping
+
+# flake8: noqa: T201 E501 INP001
 
 # filepath = Path("tests/artifacts/test_simple.mini.tml")
 # with zipfile.ZipFile(filepath, "r") as zip_file:

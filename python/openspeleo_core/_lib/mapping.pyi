@@ -4,6 +4,6 @@
 import builtins
 import typing
 
-def apply_key_mapping(data:dict, mapping:typing.Mapping[builtins.str, builtins.str]) -> typing.Any:
-    ...
-
+def apply_key_mapping(
+    data: dict, mapping: typing.Mapping[builtins.str, builtins.str]
+) -> typing.Any: ...
