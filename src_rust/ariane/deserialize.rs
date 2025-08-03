@@ -1,3 +1,4 @@
+use ahash::AHashMap;
 use pyo3::{
     exceptions::PyValueError,
     prelude::*,
@@ -6,13 +7,12 @@ use pyo3::{
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use serde_json::{Map, Value};
-use std::collections::HashMap;
 
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
 // Python bindings with optional null field preservation
 
-#[gen_stub_pyfunction(module = "openspeleo_core._lib.ariane")]
+#[gen_stub_pyfunction(module = "openspeleo_core._rust_lib.ariane")]
 #[pyfunction]
 pub fn xml_str_to_dict(xml_str: &str, keep_null: bool) -> PyResult<PyObject> {
     let value = parse_xml(xml_str, keep_null)
@@ -22,16 +22,18 @@ pub fn xml_str_to_dict(xml_str: &str, keep_null: bool) -> PyResult<PyObject> {
 
 // XML to Dict implementation with optional null field preservation
 fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
-    // Create a new XML reader
+    // Create a new XML reader with optimizations
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(true);
+    reader.config_mut().check_end_names = false;
+    reader.config_mut().expand_empty_elements = false;
 
     // Initialize variables to keep track of the parsing state
-    let mut stack: Vec<(String, Option<Value>, HashMap<String, Value>)> = Vec::new();
+    let mut stack: Vec<(String, Option<Value>, AHashMap<String, Value>)> = Vec::with_capacity(32);
     let mut root: Option<Value> = None;
     let mut current_value: Option<Value> = None;
-    let mut current_attrs: HashMap<String, Value> = HashMap::new();
-    let mut buf = Vec::new();
+    let mut current_attrs: AHashMap<String, Value> = AHashMap::default();
+    let mut buf = Vec::with_capacity(1024);
     let mut root_name = String::new();
 
     loop {
@@ -39,24 +41,23 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
                 // Handle the start of an element
-                let name = e.name().as_ref().to_vec();
-                let name = String::from_utf8_lossy(&name).into_owned();
+                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
                     root_name = name.clone();
                 }
 
-                // Handle attributes
-                let attrs: HashMap<String, Value> = e
-                    .attributes()
-                    .filter_map(|a| a.ok())
-                    .map(|a| {
-                        let key = String::from_utf8_lossy(a.key.as_ref()).to_string();
-                        let value = a.unescape_value().unwrap_or_default().to_string();
-                        (format!("@{}", key), Value::String(value))
-                    })
-                    .collect();
+                // Handle attributes efficiently with pre-allocation
+                let attrs_iter = e.attributes();
+                let size_hint = attrs_iter.size_hint();
+                let mut attrs = AHashMap::with_capacity(size_hint.1.unwrap_or(size_hint.0));
+
+                for attr in attrs_iter.filter_map(|a| a.ok()) {
+                    let key = String::from_utf8_lossy(attr.key.as_ref());
+                    let value = attr.unescape_value().unwrap_or_default();
+                    attrs.insert(format!("@{}", key), Value::String(value.into_owned()));
+                }
 
                 // Push the current state onto the stack
                 stack.push((name, current_value, current_attrs));
@@ -65,9 +66,17 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::Text(e)) => {
                 // Handle text content
+                
+                // Does not work - Creates a mismatch error with python implementation
+                // let text = String::from_utf8_lossy(&e);
+                // if !text.trim().is_empty() {
+                //     current_value = Some(Value::String(text.into_owned()));
+                // }
+
+                // The following line does not work with `quick-xml` 0.38
                 let text = e.unescape().unwrap_or_default().to_string();
                 if !text.trim().is_empty() {
-                    current_value = Some(Value::String(text));
+                    current_value = Some(Value::String(text.to_owned()));
                 }
             }
             Ok(Event::End(_)) => {
@@ -91,7 +100,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                 current_value = parent_val;
                 current_attrs = parent_attrs;
 
-                // Create a new value from the object
+                // Create a new value from the object - optimize for single text content
                 let new_value = if obj.len() == 1 && obj.contains_key("#text") {
                     obj.remove("#text").unwrap()
                 } else {
@@ -127,24 +136,23 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::Empty(e)) => {
                 // Handle empty elements
-                let name = e.name().as_ref().to_vec();
-                let name = String::from_utf8_lossy(&name).into_owned();
+                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
                     root_name = name.clone();
                 }
 
-                // Handle attributes
-                let attrs: HashMap<String, Value> = e
-                    .attributes()
-                    .filter_map(|a| a.ok())
-                    .map(|a| {
-                        let key = String::from_utf8_lossy(a.key.as_ref()).to_string();
-                        let value = a.unescape_value().unwrap_or_default().to_string();
-                        (format!("@{}", key), Value::String(value))
-                    })
-                    .collect();
+                // Handle attributes with pre-allocation
+                let attrs_iter = e.attributes();
+                let size_hint = attrs_iter.size_hint();
+                let mut attrs = AHashMap::with_capacity(size_hint.1.unwrap_or(size_hint.0));
+
+                for attr in attrs_iter.filter_map(|a| a.ok()) {
+                    let key = String::from_utf8_lossy(attr.key.as_ref());
+                    let value = attr.unescape_value().unwrap_or_default();
+                    attrs.insert(format!("@{}", key), Value::String(value.into_owned()));
+                }
 
                 // Create a new value from the attributes
                 let new_value = if keep_null {

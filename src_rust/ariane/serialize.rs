@@ -10,7 +10,7 @@ use std::io::Cursor;
 
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
-#[gen_stub_pyfunction(module = "openspeleo_core._lib.ariane")]
+#[gen_stub_pyfunction(module = "openspeleo_core._rust_lib.ariane")]
 #[pyfunction]
 pub fn dict_to_xml_str(data: &Bound<'_, PyDict>, root_name: &str) -> PyResult<String> {
     let value = pyobject_to_value(data)?;

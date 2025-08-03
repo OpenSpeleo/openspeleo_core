@@ -4,15 +4,20 @@
 # CLEAN COMMANDS
 # ============================================================================ #
 
-clean: clean-build clean-pyc ## remove all build, test, coverage and Python artifacts
+clean: clean-build clean-pyc clean-test clean-stubs  ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
 	rm -rf .venv/
 	rm -rf dist/
 	rm -rf build/
 	rm -rf target/
+	rm -f Cargo.lock
 	rm -f uv.lock
 	uv clean
+
+clean-stubs:
+	find . -name '*.pyi' -exec rm -f {} +
+
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -20,15 +25,39 @@ clean-pyc: ## remove Python file artifacts
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
 
+clean-cython: ## remove Cython build artifacts
+	rm -f _cython_lib*.so
+	rm -f _cython_lib*.c
+	rm -f _cython_lib*.cpp
+	rm -rf build/lib.*
+	rm -rf build/temp.*
+
+clean-test: ## remove test artifacts
+	rm -rf .pytest_cache/
+	rm -rf .coverage
+	rm -rf .coverage.*
+	rm -rf htmlcov/
+	rm -rf .mypy_cache/
+	rm -rf .ruff_cache/
+	rm -rf .pytest_cache/
+
 # ============================================================================ #
 # INSTALL COMMANDS
 # ============================================================================ #
 
-develop: clean ## install the package to the active Python's site-packages
-	maturin develop --uv
+cython: ## build Cython extensions
+	@if [ -f src_cython/_cython_lib.pyx ]; then \
+		echo "Building Cython extensions..."; \
+		python setup_cython.py build_ext --build-lib src_python/; \
+	else \
+		echo "No _cython_lib.pyx found, skipping Cython build"; \
+	fi
 
-build: clean ## install the package to the active Python's site-packages
+develop: cython ## install the package to the active Python's site-packages
+	maturin develop --uv --release
+
+build: cython ## install the package to the active Python's site-packages
 	maturin build --release
 
 stubs: ## generate *.pyi stubs file
-	cargo run --bin stub_gen
+	cargo run --no-default-features --features generate-stubs --bin stub_gen
