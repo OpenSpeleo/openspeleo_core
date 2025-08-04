@@ -15,7 +15,8 @@ from pathlib import Path
 import xmltodict
 from deepdiff import DeepDiff
 
-from openspeleo_core import _cython_lib  # Cython implementation for key mapping
+# from openspeleo_core import _cython_lib  # Cython implementation for key mapping
+from openspeleo_core import _rust_lib  # Rust implementation for key mapping
 
 # Import the best implementations
 from openspeleo_core import ariane_core  # Rust implementation for file loading
@@ -81,9 +82,14 @@ def python_apply_key_mapping(data, mapping):
     return data
 
 
-def cython_apply_key_mapping(data, mapping):
-    """Best implementation: Cython for key mapping."""
-    return _cython_lib.apply_key_mapping(data, mapping)
+# def cython_apply_key_mapping(data, mapping):
+#     """Best implementation: Cython for key mapping."""
+#     return _cython_lib.apply_key_mapping(data, mapping)
+
+
+def rust_apply_key_mapping(data, mapping):
+    """Best implementation: Rust for key mapping."""
+    return _rust_lib.mapping.apply_key_mapping(data, mapping)
 
 
 def create_test_data():
@@ -234,9 +240,11 @@ def main():
     }
 
     print("\n\tValidating key mapping ...")
+    print('\t\t- Executing "python_apply_key_mapping"...')
     py_result = python_apply_key_mapping(data, mapping)
-    cy_result = cython_apply_key_mapping(data, mapping)
-    assert DeepDiff(py_result, cy_result) == {}
+    print('\t\t- Executing "rust_apply_key_mapping"...')
+    rust_result_fast = rust_apply_key_mapping(data, mapping)
+    assert DeepDiff(py_result, rust_result_fast) == {}
     print("\tValidation done ...\n")
 
     # Python benchmark
@@ -245,17 +253,17 @@ def main():
     print(f"Mean: {py_map_result['mean']:.6f}s")
 
     # Cython benchmark (best implementation)
-    print("\tCython implementation...", end=" ", flush=True)
-    cython_map_result = benchmark_function(cython_apply_key_mapping, data, mapping)
-    print(f"Mean: {cython_map_result['mean']:.6f}s")
+    print("\tRust implementation...", end=" ", flush=True)
+    rust_map_result = benchmark_function(rust_apply_key_mapping, data, mapping)
+    print(f"Mean: {rust_map_result['mean']:.6f}s")
 
     # Calculate speedup
-    map_speedup = py_map_result["mean"] / cython_map_result["mean"]
+    map_speedup = py_map_result["mean"] / rust_map_result["mean"]
     print(f"\tSpeedup: {map_speedup:.2f}x faster")
 
     results["apply_key_mapping"] = {
         "python": py_map_result,
-        "cython": cython_map_result,
+        "rust": rust_map_result,
         "speedup": map_speedup,
     }
 
@@ -274,7 +282,7 @@ def main():
     print(f"\n  Average loading speedup: {avg_load_speedup:.2f}x")
 
     print(
-        f"\nKey Mapping Speedup (Cython vs Python): {results['apply_key_mapping']['speedup']:.2f}x"
+        f"\nKey Mapping Speedup (Rust vs Python): {results['apply_key_mapping']['speedup']:.2f}x"
     )
 
     # Performance characteristics
@@ -292,7 +300,7 @@ def main():
         )
         print(f"  {filename:30} {consistency:.1f}% variation")
 
-    map_data = results["apply_key_mapping"]["cython"]
+    map_data = results["apply_key_mapping"]["rust"]
     consistency = (
         (map_data["stdev"] / map_data["mean"]) * 100 if map_data["mean"] > 0 else 0
     )

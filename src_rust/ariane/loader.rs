@@ -4,8 +4,6 @@ use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
 use super::deserialize;
 
-
-
 /// Reads the contents of the "Data.xml" file from a zip archive.
 ///
 /// # Arguments
@@ -21,7 +19,8 @@ pub fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
     let file = std::fs::File::open(path).map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open file: {}", e))
     })?;
-    let reader = std::io::BufReader::new(file);
+    // Use larger buffer for better I/O performance (64KiB instead of default 8KiB)
+    let reader = std::io::BufReader::with_capacity(65_536, file);
 
     let mut archive = zip::ZipArchive::new(reader).map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open zip archive: {}", e))
@@ -46,5 +45,3 @@ pub fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
     // Convert XML to dict
     Ok(deserialize::xml_str_to_dict(&xml_contents, false)?)
 }
-
-

@@ -42,21 +42,20 @@ clean-test: ## remove test artifacts
 	rm -rf .pytest_cache/
 
 # ============================================================================ #
-# INSTALL COMMANDS
+# UPDATE COMMANDS
 # ============================================================================ #
 
-cython: ## build Cython extensions
-	@if [ -f src_cython/_cython_lib.pyx ]; then \
-		echo "Building Cython extensions..."; \
-		python setup_cython.py build_ext --build-lib src_python/; \
-	else \
-		echo "No _cython_lib.pyx found, skipping Cython build"; \
-	fi
+update:
+	cargo update --verbose
+	
+# ============================================================================ #
+# INSTALL COMMANDS
+# ============================================================================ #
 
 develop: cython ## install the package to the active Python's site-packages
 	maturin develop --uv --release
 
-build: cython ## install the package to the active Python's site-packages
+build: clean stubs ## install the package to the active Python's site-packages
 	maturin build --release
 
 stubs: ## generate *.pyi stubs file

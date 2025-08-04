@@ -4,8 +4,7 @@
 import builtins
 import typing
 
-def dict_to_xml_str(data:dict, root_name:builtins.str) -> builtins.str:
-    ...
+def dict_to_xml_str(data:dict, root_name:builtins.str) -> builtins.str: ...
 
 def load_ariane_tml_file_to_dict(path:builtins.str) -> typing.Any:
     r"""
@@ -19,8 +18,6 @@ def load_ariane_tml_file_to_dict(path:builtins.str) -> typing.Any:
     
     The contents of the "Data.xml" file as a string.
     """
-    ...
 
-def xml_str_to_dict(xml_str:builtins.str, keep_null:builtins.bool) -> typing.Any:
-    ...
+def xml_str_to_dict(xml_str:builtins.str, keep_null:builtins.bool) -> typing.Any: ...
 

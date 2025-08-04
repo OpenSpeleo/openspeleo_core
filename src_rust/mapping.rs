@@ -1,71 +1,87 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyAny, PyDict, PyList};
+use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyListMethods};
+use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
-use pyo3::ffi;
-use std::ptr;
-
+#[gen_stub_pyfunction(module = "openspeleo_core._rust_lib.mapping")]
 #[pyfunction]
-fn apply_key_mapping(py: Python<'_>, data: &PyAny, mapping: &PyDict) -> PyResult<PyObject> {
-    if let Ok(dict) = data.downcast::<PyDict>() {
-        let out = PyDict::new(py);
-        for (key, value) in dict.iter() {
-            let new_key = mapping.get_item(key).unwrap_or(key);
-            let new_value = apply_key_mapping(py, value, mapping)?;
-            out.set_item(new_key, new_value)?;
-        }
-        Ok(out.into())
-    } else if let Ok(list) = data.downcast::<PyList>() {
-        let out = PyList::empty(py);
-        for item in list.iter() {
-            let new_item = apply_key_mapping(py, item, mapping)?;
-            out.append(new_item)?;
-        }
-        Ok(out.into())
-    } else {
-        Ok(data.into())
-    }
+pub fn apply_key_mapping(
+    py: Python,
+    data: Bound<'_, PyAny>,
+    mapping: Bound<'_, PyDict>,
+) -> PyResult<PyObject> {
+    apply_key_mapping_optimized(py, &data, &mapping)
 }
 
-#[pyfunction]
-unsafe fn apply_key_mapping_raw(
-    py: Python<'_>,
-    data: *mut ffi::PyObject,
-    mapping: *mut ffi::PyObject,
+#[inline]
+fn apply_key_mapping_optimized(
+    py: Python,
+    data: &Bound<'_, PyAny>,
+    mapping: &Bound<'_, PyDict>,
 ) -> PyResult<PyObject> {
-    if ffi::PyDict_Check(data) != 0 {
-        let out = ffi::PyDict_New();
-        let mut pos: ffi::Py_ssize_t = 0;
-        let mut key: *mut ffi::PyObject = ptr::null_mut();
-        let mut value: *mut ffi::PyObject = ptr::null_mut();
+    // Step 3: Fast type dispatch using raw type pointer comparison
+    let data_type = unsafe { pyo3::ffi::Py_TYPE(data.as_ptr()) };
 
-        while ffi::PyDict_Next(data, &mut pos, &mut key, &mut value) != 0 {
-            let mapped_key = {
-                let maybe = ffi::PyDict_GetItem(mapping, key);
-                if maybe.is_null() {
-                    key
+    if data_type as *const _ == &raw const pyo3::ffi::PyDict_Type as *const _ {
+        let dict = data.downcast::<PyDict>()?;
+        let result = PyDict::new(py);
+
+        // Step 2: Use raw PyDict_Next iteration like Cython does
+        unsafe {
+            let mut pos: pyo3::ffi::Py_ssize_t = 0;
+            let mut key_ptr: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
+            let mut value_ptr: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
+
+            // Raw C API iteration - exactly like Cython
+            while pyo3::ffi::PyDict_Next(dict.as_ptr(), &mut pos, &mut key_ptr, &mut value_ptr) != 0
+            {
+                let key: Bound<'_, PyAny> = Bound::from_borrowed_ptr(py, key_ptr);
+                let value: Bound<'_, PyAny> = Bound::from_borrowed_ptr(py, value_ptr);
+
+                // Direct dict lookup - mimic Cython's mapping.get(key, key)
+                let mapped_key = match mapping.get_item(&key) {
+                    Ok(Some(mapped)) => mapped,
+                    _ => key.clone(),
+                };
+
+                // Step 3: Fast type check using raw pointers instead of is_instance_of
+                let value_type = pyo3::ffi::Py_TYPE(value_ptr);
+                let processed_value = if value_type as *const _
+                    == &raw const pyo3::ffi::PyDict_Type as *const _
+                    || value_type as *const _ == &raw const pyo3::ffi::PyList_Type as *const _
+                {
+                    apply_key_mapping_optimized(py, &value, mapping)?
                 } else {
-                    maybe
-                }
+                    value.unbind()
+                };
+
+                result.set_item(&mapped_key, &processed_value)?;
+            }
+        }
+
+        Ok(result.unbind().into())
+    } else if data_type as *const _ == &raw const pyo3::ffi::PyList_Type as *const _ {
+        let list = data.downcast::<PyList>()?;
+        let result = PyList::empty(py);
+
+        for item in list {
+            // Step 3: Fast type check for list items
+            let item_type = unsafe { pyo3::ffi::Py_TYPE(item.as_ptr()) };
+            let processed_item = if item_type as *const _
+                == &raw const pyo3::ffi::PyDict_Type as *const _
+                || item_type as *const _ == &raw const pyo3::ffi::PyList_Type as *const _
+            {
+                apply_key_mapping_optimized(py, &item, mapping)?
+            } else {
+                item.unbind()
             };
 
-            let subvalue = apply_key_mapping_raw(py, value, mapping)?;
-            ffi::PyDict_SetItem(out, mapped_key, subvalue.as_ptr());
+            result.append(&processed_item)?;
         }
 
-        Ok(PyObject::from_owned_ptr(py, out))
-    } else if ffi::PyList_Check(data) != 0 {
-        let len = ffi::PyList_GET_SIZE(data);
-        let out = ffi::PyList_New(len);
-        for i in 0..len {
-            let item = ffi::PyList_GET_ITEM(data, i);
-            let subvalue = apply_key_mapping_raw(py, item, mapping)?;
-            ffi::Py_INCREF(subvalue.as_ptr());
-            ffi::PyList_SET_ITEM(out, i, subvalue.as_ptr()); // Steals ref
-        }
-        Ok(PyObject::from_owned_ptr(py, out))
+        Ok(result.unbind().into())
     } else {
-        ffi::Py_INCREF(data);
-        Ok(PyObject::from_owned_ptr(py, data))
+        // Return primitive values as-is
+        Ok(data.clone().unbind().into())
     }
 }
 
