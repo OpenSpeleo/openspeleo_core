@@ -8,6 +8,7 @@ use quick_xml::events::Event;
 use quick_xml::Reader;
 use serde_json::{Map, Value};
 
+use htmlescape::decode_html;
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
 // Python bindings with optional null field preservation
@@ -41,11 +42,13 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
                 // Handle the start of an element
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let qname = e.name();
+                let name_cow = String::from_utf8_lossy(qname.as_ref());
+                let name = name_cow.to_owned();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
-                    root_name = name.clone();
+                    root_name = name.to_string();
                 }
 
                 // Handle attributes efficiently with pre-allocation
@@ -55,26 +58,35 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
 
                 for attr in attrs_iter.filter_map(|a| a.ok()) {
                     let key = String::from_utf8_lossy(attr.key.as_ref());
-                    let value = attr.unescape_value().unwrap_or_default();
-                    attrs.insert(format!("@{}", key), Value::String(value.into_owned()));
+                    let value =
+                        decode_html(&String::from_utf8_lossy(&attr.value)).unwrap_or_default();
+                    attrs.insert(format!("@{}", key), Value::String(value.to_owned()));
                 }
 
                 // Push the current state onto the stack
-                stack.push((name, current_value, current_attrs));
-                current_attrs = attrs;
-                current_value = Some(Value::Object(Map::new()));
+                if name == "Explorer" || name == "Comment" || name == "nested" {
+                    let text = decode_html(&reader.read_text(e.name()).unwrap_or_default())
+                        .unwrap_or_default();
+                    if let Some(Value::Object(ref mut parent)) = current_value {
+                        parent.insert(name.to_string(), Value::String(text.to_string()));
+                    }
+                } else {
+                    stack.push((name.to_string(), current_value, current_attrs));
+                    current_attrs = attrs;
+                    current_value = Some(Value::Object(Map::new()));
+                }
             }
             Ok(Event::Text(e)) => {
                 // Handle text content
-                
+
                 // Does not work - Creates a mismatch error with python implementation
                 // let text = String::from_utf8_lossy(&e);
                 // if !text.trim().is_empty() {
-                //     current_value = Some(Value::String(text.into_owned()));
+                //     current_value = Some(Value::String(text.to_owned()));
                 // }
 
                 // The following line does not work with `quick-xml` 0.38
-                let text = e.unescape().unwrap_or_default().to_string();
+                let text = decode_html(&String::from_utf8_lossy(&e)).unwrap_or_default();
                 if !text.trim().is_empty() {
                     current_value = Some(Value::String(text.to_owned()));
                 }
@@ -119,15 +131,18 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                     // Add the new value to the parent object
                     if let Some(Value::Object(ref mut parent)) = current_value {
                         // Handle duplicate keys by converting to array
-                        if let Some(existing) = parent.get_mut(&name) {
+                        if let Some(existing) = parent.get_mut(&name.to_string()) {
                             if let Value::Array(ref mut arr) = existing {
                                 arr.push(new_value);
                             } else {
                                 let existing_val = existing.take();
-                                parent.insert(name, Value::Array(vec![existing_val, new_value]));
+                                parent.insert(
+                                    name.to_string(),
+                                    Value::Array(vec![existing_val, new_value]),
+                                );
                             }
                         } else {
-                            parent.insert(name, new_value);
+                            parent.insert(name.to_string(), new_value);
                         }
                     } else {
                         root = Some(new_value);
@@ -136,11 +151,13 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::Empty(e)) => {
                 // Handle empty elements
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let qname = e.name();
+                let name_cow = String::from_utf8_lossy(qname.as_ref());
+                let name = name_cow.to_owned();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
-                    root_name = name.clone();
+                    root_name = name.to_string();
                 }
 
                 // Handle attributes with pre-allocation
@@ -150,8 +167,9 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
 
                 for attr in attrs_iter.filter_map(|a| a.ok()) {
                     let key = String::from_utf8_lossy(attr.key.as_ref());
-                    let value = attr.unescape_value().unwrap_or_default();
-                    attrs.insert(format!("@{}", key), Value::String(value.into_owned()));
+                    let value =
+                        decode_html(&String::from_utf8_lossy(&attr.value)).unwrap_or_default();
+                    attrs.insert(format!("@{}", key), Value::String(value.to_owned()));
                 }
 
                 // Create a new value from the attributes
@@ -184,15 +202,18 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                     // Add the new value to the parent object
                     if let Some(Value::Object(ref mut parent)) = current_value {
                         // Handle duplicate keys by converting to array
-                        if let Some(existing) = parent.get_mut(&name) {
+                        if let Some(existing) = parent.get_mut(&name.to_string()) {
                             if let Value::Array(ref mut arr) = existing {
                                 arr.push(new_value);
                             } else {
                                 let existing_val = existing.take();
-                                parent.insert(name, Value::Array(vec![existing_val, new_value]));
+                                parent.insert(
+                                    name.to_string(),
+                                    Value::Array(vec![existing_val, new_value]),
+                                );
                             }
                         } else {
-                            parent.insert(name, new_value);
+                            parent.insert(name.to_string(), new_value);
                         }
                     } else {
                         root = Some(new_value);

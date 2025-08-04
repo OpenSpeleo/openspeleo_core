@@ -13,13 +13,14 @@ maturin = "1.9.2"
 [dependencies]
 ahash = "0.8.12"
 # Upgrading to 0.38 creates object mismatch errors - Inside `deserialize.rs`
-quick-xml = { version = "0.37.5", features = ["serialize", "overlapped-lists"] }
+quick-xml = { version = "0.38.1", features = ["serialize", "overlapped-lists"] }
 serde = { version = "1.0.219" }
 serde_json = "1.0.142"
 pyo3 = { version = "0.25.1", features = ["abi3-py313"] }
 zip = { version = "4.3.0", default-features = false, features = ["deflate"] }
 # =================== Generate *.pyi stubs files =================== #
 pyo3-stub-gen = "0.12.0"
+htmlescape = "0.3.1"
 
 [lib]
 path = "src_rust/lib.rs"
