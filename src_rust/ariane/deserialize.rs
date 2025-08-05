@@ -2,9 +2,9 @@ use ahash::AHashMap;
 use pyo3::{
     exceptions::PyValueError,
     prelude::*,
-    types::{PyDict, PyFloat, PyList, PyString},
+    types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString},
 };
-use quick_xml::events::Event;
+use quick_xml::events::{BytesStart, Event};
 use quick_xml::Reader;
 use serde_json::{Map, Value};
 
@@ -18,6 +18,25 @@ pub fn xml_str_to_dict(xml_str: &str, keep_null: bool) -> PyResult<PyObject> {
     let value = parse_xml(xml_str, keep_null)
         .map_err(|e| PyValueError::new_err(format!("XML parsing error: {}", e)))?;
     Python::with_gil(|py| value_to_pyobject(&value, py))
+}
+
+fn collect_attrs(e: &BytesStart<'_>) -> AHashMap<String, Value> {
+    let iter = e.attributes();
+    let mut map = AHashMap::with_capacity(iter.size_hint().1.unwrap_or(0));
+
+    for attr in iter.filter_map(Result::ok) {
+        // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
+        let key = unsafe { std::str::from_utf8_unchecked(attr.key.as_ref()) };
+
+        let mut full_key = String::with_capacity(1 + key.len());
+        full_key.push('@');
+        full_key.push_str(&key);
+
+        let value = attr.unescape_value().unwrap_or_default().into_owned();
+
+        map.insert(full_key, Value::String(value));
+    }
+    map
 }
 
 // XML to Dict implementation with optional null field preservation
@@ -41,7 +60,9 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
                 // Handle the start of an element
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+
+                // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
+                let name = unsafe { std::str::from_utf8_unchecked(e.name().as_ref()) }.to_string();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
@@ -49,15 +70,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                 }
 
                 // Handle attributes efficiently with pre-allocation
-                let attrs_iter = e.attributes();
-                let size_hint = attrs_iter.size_hint();
-                let mut attrs = AHashMap::with_capacity(size_hint.1.unwrap_or(size_hint.0));
-
-                for attr in attrs_iter.filter_map(|a| a.ok()) {
-                    let key = String::from_utf8_lossy(attr.key.as_ref());
-                    let value = attr.unescape_value().unwrap_or_default();
-                    attrs.insert(format!("@{}", key), Value::String(value.into_owned()));
-                }
+                let attrs = collect_attrs(&e);
 
                 // Push the current state onto the stack
                 stack.push((name, current_value, current_attrs));
@@ -66,14 +79,6 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::Text(e)) => {
                 // Handle text content
-                
-                // Does not work - Creates a mismatch error with python implementation
-                // let text = String::from_utf8_lossy(&e);
-                // if !text.trim().is_empty() {
-                //     current_value = Some(Value::String(text.into_owned()));
-                // }
-
-                // The following line does not work with `quick-xml` 0.38
                 let text = e.unescape().unwrap_or_default().to_string();
                 if !text.trim().is_empty() {
                     current_value = Some(Value::String(text.to_owned()));
@@ -81,7 +86,12 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::End(_)) => {
                 // Handle the end of an element
-                let (name, parent_val, parent_attrs) = stack.pop().unwrap();
+                // let (name, parent_val, parent_attrs) = stack.pop().unwrap();
+                let (name, parent_val, parent_attrs) = match stack.pop() {
+                    Some(t) => t,
+                    None => return Err("Unexpected end tag without matching start".to_string()),
+                };
+
                 let mut obj = match current_value.take() {
                     Some(Value::Object(m)) => m,
                     Some(v) => {
@@ -92,17 +102,14 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                     None => Map::new(),
                 };
 
-                // Merge attributes
-                for (k, v) in current_attrs.drain() {
-                    obj.insert(k, v);
-                }
+                obj.extend(current_attrs);
 
                 current_value = parent_val;
                 current_attrs = parent_attrs;
 
                 // Create a new value from the object - optimize for single text content
-                let new_value = if obj.len() == 1 && obj.contains_key("#text") {
-                    obj.remove("#text").unwrap()
+                let new_value = if obj.len() == 1 {
+                    obj.remove("#text").unwrap_or(Value::Object(obj))
                 } else {
                     Value::Object(obj)
                 };
@@ -136,7 +143,8 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::Empty(e)) => {
                 // Handle empty elements
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
+                let name = unsafe { std::str::from_utf8_unchecked(e.name().as_ref()) }.to_string();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
@@ -144,32 +152,17 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                 }
 
                 // Handle attributes with pre-allocation
-                let attrs_iter = e.attributes();
-                let size_hint = attrs_iter.size_hint();
-                let mut attrs = AHashMap::with_capacity(size_hint.1.unwrap_or(size_hint.0));
-
-                for attr in attrs_iter.filter_map(|a| a.ok()) {
-                    let key = String::from_utf8_lossy(attr.key.as_ref());
-                    let value = attr.unescape_value().unwrap_or_default();
-                    attrs.insert(format!("@{}", key), Value::String(value.into_owned()));
-                }
+                let attrs = collect_attrs(&e);
 
                 // Create a new value from the attributes
                 let new_value = if keep_null {
                     Value::Null
+                } else if attrs.is_empty() {
+                    // Skip this empty element without attributes
+                    buf.clear();
+                    continue;
                 } else {
-                    if attrs.is_empty() {
-                        continue;
-                    } else {
-                        let mut obj = Map::new();
-                        for (k, v) in attrs {
-                            obj.insert(k, v);
-                        }
-                        if obj.is_empty() {
-                            continue;
-                        }
-                        Value::Object(obj)
-                    }
+                    Value::Object(attrs.into_iter().collect())
                 };
 
                 // Check if the new value is null and if we should keep null values
@@ -177,6 +170,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                     // Check if the new value is an empty object and if we should keep null values
                     if let Value::Object(ref obj) = new_value {
                         if obj.is_empty() && !keep_null {
+                            buf.clear();
                             continue;
                         }
                     }
@@ -188,8 +182,9 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                             if let Value::Array(ref mut arr) = existing {
                                 arr.push(new_value);
                             } else {
-                                let existing_val = existing.take();
-                                parent.insert(name, Value::Array(vec![existing_val, new_value]));
+                                let existing_val = std::mem::replace(existing, Value::Null);
+                                let arr = vec![existing_val, new_value];
+                                parent.insert(name.clone(), Value::Array(arr));
                             }
                         } else {
                             parent.insert(name, new_value);
@@ -222,16 +217,16 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
     .ok_or_else(|| "Empty XML document".to_string())
 }
 
-// Updated helper functions for Python/Rust type conversion
-
 // Function to handle conversion of serde_json::Value
 fn value_to_pyobject(value: &Value, py: Python<'_>) -> PyResult<PyObject> {
     match value {
         Value::Null => Ok(py.None()),
-        Value::Bool(b) => Ok(b.into_pyobject(py).unwrap().to_owned().into()),
+
+        Value::Bool(b) => Ok(PyBool::new(py, *b).to_owned().into()),
+
         Value::Number(num) => {
             if let Some(i) = num.as_i64() {
-                Ok(i.into_pyobject(py).unwrap().to_owned().into())
+                Ok(PyInt::new(py, i).into())
             } else if let Some(f) = num.as_f64() {
                 Ok(PyFloat::new(py, f).into())
             } else {
@@ -239,12 +234,14 @@ fn value_to_pyobject(value: &Value, py: Python<'_>) -> PyResult<PyObject> {
             }
         }
         Value::String(s) => Ok(PyString::new(py, s).into()),
+
         Value::Array(arr) => {
-            let list = PyList::empty(py);
+            // Pre-allocate the PyObject Vec to avoid repeated allocation
+            let mut items = Vec::with_capacity(arr.len());
             for item in arr {
-                list.append(value_to_pyobject(item, py)?)?;
+                items.push(value_to_pyobject(item, py)?);
             }
-            Ok(list.into())
+            Ok(PyList::new(py, items).unwrap().into())
         }
         Value::Object(obj) => {
             let dict = PyDict::new(py);

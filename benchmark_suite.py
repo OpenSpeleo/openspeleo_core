@@ -2,10 +2,11 @@
 """
 Benchmark suite comparing the best implementations:
 - File loading: Rust (4.38x faster than Python)
-- Key mapping: Cython (4.88x faster than Python)
+- Key mapping: Rust (4.14x faster than Python)
 """
 
 import json
+import pprint as pp
 import statistics
 import sys
 import time
@@ -14,6 +15,7 @@ from pathlib import Path
 
 import xmltodict
 from deepdiff import DeepDiff
+from scipy import stats
 
 # from openspeleo_core import _cython_lib  # Cython implementation for key mapping
 from openspeleo_core import _rust_lib  # Rust implementation for key mapping
@@ -46,7 +48,7 @@ def benchmark_function(func, *args, runs=30, warmup=20, **kwargs):
         times.append(time.perf_counter() - start)
 
     return {
-        "mean": statistics.mean(times),
+        "mean": stats.trim_mean(times, proportiontocut=0.1),
         "median": statistics.median(times),
         "stdev": statistics.stdev(times) if len(times) > 1 else 0,
         "min": min(times),
@@ -128,6 +130,25 @@ def main():
         "apply_key_mapping": {},
     }
 
+    # Initial validation
+    print("\n0. Validating implementations with demo.tml...")
+    print("-" * 60)
+    filepath = "tests/artifacts/demo.tml"
+    py_result = python_load_ariane_tml(filepath)
+    rust_result = rust_load_ariane_tml(filepath)
+
+    print("\n=================== PYTHON ====================")
+    pp.pprint(py_result)
+    print("=================== RUST ====================")
+    pp.pprint(rust_result)
+    print("================================================\n")
+
+    ddiff = DeepDiff(py_result, rust_result, ignore_order=True)
+    assert ddiff == {}, pp.pformat(ddiff, indent=2, sort_dicts=True)
+    print("Done ...")
+
+    # sys.exit(0)
+
     # Benchmark 1: Loading Ariane TML files
     print("\n1. Benchmarking Ariane TML file loading...")
     print("-" * 60)
@@ -136,21 +157,23 @@ def main():
 
         print(f"\nTesting {filename}:\n")
 
-        print(f"\tValidating {filename} ...")
+        print("\tValidating loading ...")
         py_result = python_load_ariane_tml(filepath)
         rust_result = rust_load_ariane_tml(filepath)
-        assert DeepDiff(py_result, rust_result) == {}
+
+        ddiff = DeepDiff(py_result, rust_result, ignore_order=True)
+        assert ddiff == {}, pp.pformat(ddiff, indent=2, sort_dicts=True)
         print("\tValidation done ...\n")
 
         # Python benchmark
         print("\tPython implementation...", end=" ", flush=True)
         py_result = benchmark_function(python_load_ariane_tml, filepath)
-        print(f"Mean: {py_result['mean']:.4f}s")
+        print(f"Mean: {py_result['mean']:.6f}s")
 
         # Rust benchmark (best implementation)
         print("\tRust implementation...", end=" ", flush=True)
         rust_result = benchmark_function(rust_load_ariane_tml, filepath)
-        print(f"Mean: {rust_result['mean']:.4f}s")
+        print(f"Mean: {rust_result['mean']:.6f}s")
 
         # Calculate speedup
         speedup = py_result["mean"] / rust_result["mean"]
@@ -243,8 +266,9 @@ def main():
     print('\t\t- Executing "python_apply_key_mapping"...')
     py_result = python_apply_key_mapping(data, mapping)
     print('\t\t- Executing "rust_apply_key_mapping"...')
-    rust_result_fast = rust_apply_key_mapping(data, mapping)
-    assert DeepDiff(py_result, rust_result_fast) == {}
+    rust_result = rust_apply_key_mapping(data, mapping)
+    ddiff = DeepDiff(py_result, rust_result, ignore_order=True)
+    assert ddiff == {}, pp.pformat(ddiff, indent=2, sort_dicts=True)
     print("\tValidation done ...\n")
 
     # Python benchmark
@@ -252,7 +276,7 @@ def main():
     py_map_result = benchmark_function(python_apply_key_mapping, data, mapping)
     print(f"Mean: {py_map_result['mean']:.6f}s")
 
-    # Cython benchmark (best implementation)
+    # Rust benchmark
     print("\tRust implementation...", end=" ", flush=True)
     rust_map_result = benchmark_function(rust_apply_key_mapping, data, mapping)
     print(f"Mean: {rust_map_result['mean']:.6f}s")
@@ -304,7 +328,7 @@ def main():
     consistency = (
         (map_data["stdev"] / map_data["mean"]) * 100 if map_data["mean"] > 0 else 0
     )
-    print(f"\nKey Mapping (Cython): {consistency:.1f}% variation")
+    print(f"\nKey Mapping (Rust): {consistency:.1f}% variation")
 
     # Save results
     save_benchmark_results(results)

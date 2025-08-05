@@ -243,7 +243,7 @@ checksum = "2f307d010782c2a4066cc5125ba8c6b68db926b3a1bb82bd6d0b38950c6d4815"
 dependencies = [
  "serde",
  "serde_derive",
- "toml 0.9.4",
+ "toml 0.9.5",
  "windows-sys 0.60.2",
 ]
 
@@ -1374,9 +1374,9 @@ dependencies = [
 
 [[package]]
 name = "maturin"
-version = "1.9.2"
+version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f657b9b16732e0dc5e24b297dad19daa7aaed21590313643e5f8ded746885965"
+checksum = "890d2529a69512014ab4abd9a7c07314311c2af41f60f353eaf86ac2cd9a4de6"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -1922,9 +1922,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-stub-gen"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a84b534c769d0209cda617283e835901aa6bdb43845aaada51375692a189978e"
+checksum = "3715823323ca2c3084ba54d686bf286a3d6d85715066e1ef3376f125bdc6b9d8"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1944,9 +1944,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-stub-gen-derive"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3112353bad67182d5683f67bf02656ff935cee31b0cea0a7b42dee93ca4c68cb"
+checksum = "93c4d970a4d60bedb6153f12beb780ee39169aee7137a088d20af18bd5717368"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -2652,9 +2652,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41ae868b5a0f67631c14589f7e250c1ea2c574ee5ba21c6c8dd4b1485705a5a1"
+checksum = "75129e1dc5000bfbaa9fee9d1b21f974f9fbad9daec557a521ee6e080825f6e8"
 dependencies = [
  "serde",
  "serde_spanned 1.0.0",
@@ -2697,9 +2697,9 @@ dependencies = [
 
 [[package]]
 name = "toml_parser"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97200572db069e74c512a14117b296ba0a80a30123fbbb5aa1f4a348f639ca30"
+checksum = "b551886f449aa90d4fe2bdaa9f4a2577ad2dde302c61ecf262d80b116db95c10"
 dependencies = [
  "winnow",
 ]
@@ -3591,9 +3591,9 @@ dependencies = [
 
 [[package]]
 name = "zerovec"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a05eb080e015ba39cc9e23bbe5e7fb04d5fb040350f99f34e338d5fdd294428"
+checksum = "bdbb9122ea75b11bf96e7492afb723e8a7fbe12c67417aa95e7e3d18144d37cd"
 dependencies = [
  "yoke",
  "zerofrom",

@@ -25,12 +25,12 @@ clean-pyc: ## remove Python file artifacts
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
 
-clean-cython: ## remove Cython build artifacts
-	rm -f _cython_lib*.so
-	rm -f _cython_lib*.c
-	rm -f _cython_lib*.cpp
-	rm -rf build/lib.*
-	rm -rf build/temp.*
+# clean-cython: ## remove Cython build artifacts
+# 	rm -f _cython_lib*.so
+# 	rm -f _cython_lib*.c
+# 	rm -f _cython_lib*.cpp
+# 	rm -rf build/lib.*
+# 	rm -rf build/temp.*
 
 clean-test: ## remove test artifacts
 	rm -rf .pytest_cache/
@@ -52,10 +52,10 @@ update:
 # INSTALL COMMANDS
 # ============================================================================ #
 
-develop: cython ## install the package to the active Python's site-packages
+develop: ## install the package to the active Python's site-packages
 	maturin develop --uv --release
 
-build: clean stubs ## install the package to the active Python's site-packages
+build: clean update stubs ## install the package to the active Python's site-packages
 	maturin build --release
 
 stubs: ## generate *.pyi stubs file
