@@ -16,7 +16,7 @@ use pyo3_stub_gen::derive::gen_stub_pyfunction;
 #[pyfunction]
 pub fn xml_str_to_dict(xml_str: &str, keep_null: bool) -> PyResult<PyObject> {
     let value = parse_xml(xml_str, keep_null)
-        .map_err(|e| PyValueError::new_err(format!("XML parsing error: {}", e)))?;
+        .map_err(|e| PyValueError::new_err(format!("XML parsing error: {e}")))?;
     Python::with_gil(|py| value_to_pyobject(&value, py))
 }
 
@@ -30,7 +30,7 @@ fn collect_attrs(e: &BytesStart<'_>) -> AHashMap<String, Value> {
 
         let mut full_key = String::with_capacity(1 + key.len());
         full_key.push('@');
-        full_key.push_str(&key);
+        full_key.push_str(key);
 
         let value = attr.unescape_value().unwrap_or_default().into_owned();
 

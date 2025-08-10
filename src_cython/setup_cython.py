@@ -1,11 +1,16 @@
+# ruff: noqa: E402
+
+from __future__ import annotations
+
 import warnings
 
 # Suppress deprecation warnings from ptr package
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="ptr")
 warnings.filterwarnings("ignore", category=UserWarning, module="ptr")
 
-from setuptools import setup, Extension
 from Cython.Build import cythonize
+from setuptools import Extension
+from setuptools import setup
 
 ext_modules = [
     Extension(

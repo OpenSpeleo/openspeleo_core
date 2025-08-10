@@ -1,9 +1,8 @@
 import unittest
 
-from parameterized import parameterized
-
 from openspeleo_core.legacy import deserialize_xmlfield_to_dict
 from openspeleo_core.legacy import serialize_dict_to_xmlfield
+from parameterized import parameterized
 
 TEST_DATA = [
     (

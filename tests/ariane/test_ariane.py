@@ -6,10 +6,9 @@ from pathlib import Path
 import pytest
 import xmltodict
 from deepdiff import DeepDiff
-from parameterized import parameterized
-
 from openspeleo_core import ariane_core
 from openspeleo_core import legacy
+from parameterized import parameterized
 
 DEBUG = False
 

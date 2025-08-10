@@ -5,6 +5,8 @@ Benchmark suite comparing the best implementations:
 - Key mapping: Rust (4.14x faster than Python)
 """
 
+from __future__ import annotations
+
 import json
 import pprint as pp
 import statistics
@@ -15,14 +17,15 @@ from pathlib import Path
 
 import xmltodict
 from deepdiff import DeepDiff
-from scipy import stats
 
 # from openspeleo_core import _cython_lib  # Cython implementation for key mapping
-from openspeleo_core import _rust_lib  # Rust implementation for key mapping
-
 # Import the best implementations
+from openspeleo_core import _rust_lib  # Rust implementation for key mapping
 from openspeleo_core import ariane_core  # Rust implementation for file loading
 from openspeleo_core.legacy import remove_none_values  # Base Python implementation
+from scipy import stats
+
+# ruff: noqa: T201, T203, PLR0915
 
 # Test files
 TEST_FILES = [
@@ -114,7 +117,7 @@ def create_test_data():
 
 def save_benchmark_results(results, filename="benchmark_results.json"):
     """Save benchmark results to a JSON file."""
-    with open(filename, "w") as f:
+    with open(filename, "w") as f:  # noqa: PTH123
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {filename}")
 
@@ -307,7 +310,8 @@ def main():
     print(f"\n  Average loading speedup: {avg_load_speedup:.2f}x")
 
     print(
-        f"\nKey Mapping Speedup (Rust vs Python): {results['apply_key_mapping']['speedup']:.2f}x"
+        "\nKey Mapping Speedup (Rust vs Python): "
+        f"{results['apply_key_mapping']['speedup']:.2f}x"
     )
 
     # Performance characteristics

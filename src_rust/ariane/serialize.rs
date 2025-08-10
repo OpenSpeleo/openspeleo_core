@@ -21,13 +21,13 @@ pub fn dict_to_xml_str(data: &Bound<'_, PyDict>, root_name: &str) -> PyResult<St
             Some("utf-8"),
             None,
         )))
-        .map_err(|e| PyValueError::new_err(format!("XML writing error: {}", e)))?;
+        .map_err(|e| PyValueError::new_err(format!("XML writing error: {e}")))?;
 
     value_to_xml(&value, root_name, &mut writer)
-        .map_err(|e| PyValueError::new_err(format!("XML generation error: {}", e)))?;
+        .map_err(|e| PyValueError::new_err(format!("XML generation error: {e}")))?;
 
     let xml_string = String::from_utf8(writer.into_inner().into_inner())
-        .map_err(|e| PyValueError::new_err(format!("UTF-8 conversion error: {}", e)))?;
+        .map_err(|e| PyValueError::new_err(format!("UTF-8 conversion error: {e}")))?;
     Ok(xml_string)
 }
 
@@ -57,7 +57,7 @@ fn pyobject_to_value(obj: &Bound<'_, PyAny>) -> PyResult<Value> {
         }
         Ok(Value::Object(map))
     } else {
-        Err(PyValueError::new_err("Unsupported Python type").into())
+        Err(PyValueError::new_err("Unsupported Python type"))
     }
 }
 
@@ -73,7 +73,7 @@ fn value_to_xml(
                 .write_event(Event::Start(elem))
                 .map_err(|e| e.to_string())?;
             for (k, v) in obj {
-                value_to_xml(&v, &k, writer)?;
+                value_to_xml(v, k, writer)?;
             }
             writer
                 .write_event(Event::End(BytesEnd::new(parent_name)))
@@ -81,7 +81,7 @@ fn value_to_xml(
         }
         Value::Array(arr) => {
             for item in arr {
-                value_to_xml(&item, parent_name, writer)?;
+                value_to_xml(item, parent_name, writer)?;
             }
         }
         Value::String(s) => {
@@ -89,7 +89,7 @@ fn value_to_xml(
                 .write_event(Event::Start(BytesStart::new(parent_name)))
                 .map_err(|e| e.to_string())?;
             writer
-                .write_event(Event::Text(BytesText::new(&s)))
+                .write_event(Event::Text(BytesText::new(s)))
                 .map_err(|e| e.to_string())?;
             writer
                 .write_event(Event::End(BytesEnd::new(parent_name)))

@@ -22,7 +22,7 @@ cpdef object apply_key_mapping(object data, dict mapping):
     """
     Cython-optimized version of apply_key_mapping.
     Recursively applies key mapping to dictionaries.
-    
+
     This is the best performing implementation based on benchmarks.
     """
     cdef dict result_dict
@@ -31,23 +31,23 @@ cpdef object apply_key_mapping(object data, dict mapping):
     cdef Py_ssize_t pos = 0
     cdef PyObject* c_key
     cdef PyObject* c_value
-    
+
     if isinstance(data, dict):
         result_dict = {}
         # Use low-level dict iteration
         while PyDict_Next(<dict>data, &pos, &c_key, &c_value):
             key = <object>c_key
             value = <object>c_value
-            
+
             # Fast mapping lookup
             mapped_key = mapping.get(key, key)
-            
+
             if isinstance(value, (dict, list)):
                 result_dict[mapped_key] = apply_key_mapping(value, mapping)
             else:
                 result_dict[mapped_key] = value
         return result_dict
-        
+
     elif isinstance(data, list):
         result_list = []
         for item in <list>data:
@@ -56,5 +56,5 @@ cpdef object apply_key_mapping(object data, dict mapping):
             else:
                 result_list.append(item)
         return result_list
-    
+
     return data

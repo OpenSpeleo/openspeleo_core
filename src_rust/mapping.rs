@@ -21,7 +21,10 @@ fn apply_key_mapping_optimized(
     // Step 3: Fast type dispatch using raw type pointer comparison
     let data_type = unsafe { pyo3::ffi::Py_TYPE(data.as_ptr()) };
 
-    if data_type as *const _ == &raw const pyo3::ffi::PyDict_Type as *const _ {
+    if std::ptr::eq(
+        data_type as *const _,
+        &raw const pyo3::ffi::PyDict_Type as *const _,
+    ) {
         let dict = data.downcast::<PyDict>()?;
         let result = PyDict::new(py);
 
@@ -45,10 +48,13 @@ fn apply_key_mapping_optimized(
 
                 // Step 3: Fast type check using raw pointers instead of is_instance_of
                 let value_type = pyo3::ffi::Py_TYPE(value_ptr);
-                let processed_value = if value_type as *const _
-                    == &raw const pyo3::ffi::PyDict_Type as *const _
-                    || value_type as *const _ == &raw const pyo3::ffi::PyList_Type as *const _
-                {
+                let processed_value = if std::ptr::eq(
+                    value_type as *const _,
+                    &raw const pyo3::ffi::PyDict_Type as *const _,
+                ) || std::ptr::eq(
+                    value_type as *const _,
+                    &raw const pyo3::ffi::PyList_Type as *const _,
+                ) {
                     apply_key_mapping_optimized(py, &value, mapping)?
                 } else {
                     value.unbind()
@@ -59,17 +65,23 @@ fn apply_key_mapping_optimized(
         }
 
         Ok(result.unbind().into())
-    } else if data_type as *const _ == &raw const pyo3::ffi::PyList_Type as *const _ {
+    } else if std::ptr::eq(
+        data_type as *const _,
+        &raw const pyo3::ffi::PyList_Type as *const _,
+    ) {
         let list = data.downcast::<PyList>()?;
         let result = PyList::empty(py);
 
         for item in list {
             // Step 3: Fast type check for list items
             let item_type = unsafe { pyo3::ffi::Py_TYPE(item.as_ptr()) };
-            let processed_item = if item_type as *const _
-                == &raw const pyo3::ffi::PyDict_Type as *const _
-                || item_type as *const _ == &raw const pyo3::ffi::PyList_Type as *const _
-            {
+            let processed_item = if std::ptr::eq(
+                item_type as *const _,
+                &raw const pyo3::ffi::PyDict_Type as *const _,
+            ) || std::ptr::eq(
+                item_type as *const _,
+                &raw const pyo3::ffi::PyList_Type as *const _,
+            ) {
                 apply_key_mapping_optimized(py, &item, mapping)?
             } else {
                 item.unbind()
@@ -81,7 +93,7 @@ fn apply_key_mapping_optimized(
         Ok(result.unbind().into())
     } else {
         // Return primitive values as-is
-        Ok(data.clone().unbind().into())
+        Ok(data.clone().unbind())
     }
 }
 

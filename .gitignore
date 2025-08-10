@@ -183,6 +183,7 @@ vendor/
 /*.json
 /*.xml
 /*.tml
+/*.json
 tests/*.json
 tests/*.xml
 tests/*.tml

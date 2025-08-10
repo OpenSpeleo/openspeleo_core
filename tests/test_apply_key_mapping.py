@@ -1,7 +1,6 @@
 import unittest
 
 import pytest
-
 from openspeleo_core.mapping import apply_key_mapping
 
 
