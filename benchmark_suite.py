@@ -137,14 +137,15 @@ def main():
     py_result = python_load_ariane_tml(filepath)
     rust_result = rust_load_ariane_tml(filepath)
 
-    print("\n=================== PYTHON ====================")
-    pp.pprint(py_result)
-    print("=================== RUST ====================")
-    pp.pprint(rust_result)
-    print("================================================\n")
-
     ddiff = DeepDiff(py_result, rust_result, ignore_order=True)
-    assert ddiff == {}, pp.pformat(ddiff, indent=2, sort_dicts=True)
+    if ddiff != {}:
+        print("\n=================== PYTHON ====================")
+        pp.pprint(py_result)
+        print("=================== RUST ====================")
+        pp.pprint(rust_result)
+        print("================================================\n")
+
+        raise AssertionError(pp.pformat(ddiff, indent=2, sort_dicts=True))
     print("Done ...")
 
     # sys.exit(0)
