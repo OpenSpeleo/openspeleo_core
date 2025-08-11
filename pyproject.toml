@@ -11,9 +11,9 @@ features = ["pyo3/extension-module"]
 [tool.uv]
 dev-dependencies = [
     "check-manifest",
-    "pre-commit>=4.1,<4.2",
+    "pre-commit>=4.1,<4.4",
     "maturin[patchelf]>=1.8",
-    "ruff>=0.3,<0.12",
+    "ruff>=0.3,<0.13",
     "wheel>=0.45",
 ]
 package = true

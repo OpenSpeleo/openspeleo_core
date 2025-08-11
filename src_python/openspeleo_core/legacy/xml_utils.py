@@ -55,7 +55,7 @@ def serialize_dict_to_xmlfield(data: dict | str) -> str:
 
 
 def xml_to_dict(xml_data: str) -> dict:
-    root = etree.fromstring(xml_data)  # noqa: S320
+    root = etree.fromstring(xml_data)
     return _etree_to_dict(root)
 
 
