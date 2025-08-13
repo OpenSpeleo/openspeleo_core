@@ -1,6 +1,9 @@
 {
   "name": "rxml - Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/rust:bullseye",
+  "build": {
+      "context": "..",
+      "dockerfile": "Dockerfile"
+  },
   "workspaceFolder": "/workspace/",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/,type=bind",
   "customizations": {
@@ -47,11 +50,10 @@
         // Ruff
         "charliermarsh.ruff",
         // Rust
-        "rust-lang.rust-analyzer",
+        "rust-lang.rust-analyzer"
       ]
     }
   },
-  "postCreateCommand": "bash /workspace/.devcontainer/post_create.sh",
   "features": {
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"
