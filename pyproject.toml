@@ -20,7 +20,7 @@ package = true
 
 [project]
 name = "openspeleo_core"
-version = "0.0.1"
+version = "0.0.2"
 description = "A Rust backend library aiming to provide high performance implementations for OpenSpeleo project."
 authors = [{ name = "Jonathan Dekhtiar", email = "jonathan@dekhtiar.com" }]
 classifiers = [
