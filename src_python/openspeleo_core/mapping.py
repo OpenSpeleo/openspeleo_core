@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from openspeleo_core._rust_lib import mapping as _lib  # type: ignore  # noqa: PGH003
 
 

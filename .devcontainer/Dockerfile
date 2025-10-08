@@ -1,4 +1,4 @@
-FROM python:3.14.0rc3-bookworm
+FROM python:3.14.0-bookworm
 
 RUN apt update && apt install -y --no-install-recommends \
     git \
@@ -31,4 +31,3 @@ RUN curl https://sh.rustup.rs -sSf | \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 ENV UV_CACHE_DIR="/workspace/.uv/cache"
-ENV PATH="/workspace/.venv/bin:$PATH"

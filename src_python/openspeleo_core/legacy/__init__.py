@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from openspeleo_core.legacy.processing import apply_key_mapping
 from openspeleo_core.legacy.processing import remove_none_values
 from openspeleo_core.legacy.xml_utils import deserialize_xmlfield_to_dict

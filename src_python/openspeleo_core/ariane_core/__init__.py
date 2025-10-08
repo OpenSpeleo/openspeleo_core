@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from openspeleo_core._rust_lib import ariane as _ariane  # type: ignore  # noqa: PGH003

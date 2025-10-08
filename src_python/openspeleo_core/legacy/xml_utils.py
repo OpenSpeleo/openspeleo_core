@@ -1,8 +1,13 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import xmltodict
 from dicttoxml2 import dicttoxml
 from lxml import etree
+
+if TYPE_CHECKING:
+    from typing import Any
 
 
 def ArianeCustomXMLEncoder(data: Any) -> Any:  # noqa: N802

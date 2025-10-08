@@ -22,8 +22,6 @@ dev = [
 
 [project]
 name = "openspeleo_core"
-version = "0.0.3"
-description = "A Rust backend library aiming to provide high performance implementations for OpenSpeleo project."
 authors = [{ name = "Jonathan Dekhtiar", email = "jonathan@dekhtiar.com" }]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -35,14 +33,15 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = []
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.10"
+dynamic = ["description", "version"]
 
 [project.optional-dependencies]
-legacy = ["lxml>=6.0,<7.0", "dicttoxml2>=2.1,<2.2", "xmltodict>=0.14,<0.15"]
+legacy = ["lxml>=6.0,<7.0", "dicttoxml2>=2.1,<2.2", "xmltodict>=1.0,<1.1"]
 benchmark = [
     "deepdiff>=7.0,<9.0",
     "scipy>=1.15.0,<2.0.0",
-    "xmltodict>=0.14,<0.15",
+    "xmltodict>=1.0,<1.1",
 ]
 test = [
     "deepdiff>=7.0,<9.0",
@@ -191,7 +190,8 @@ ignore = [
     # https://github.com/astral-sh/ruff/issues/7871
     "PLR0912", # Checks for functions or methods with too many branches, including (nested)
     # if, elif, and else branches, for loops, try-except clauses, and match and case statements.
-    "C901", # Checks for functions with a high McCabe complexity.
+    "C901",   # Checks for functions with a high McCabe complexity.
+    "DTZ001", # Checks for datetime instantiations that do not specify a timezone.
 ]
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
