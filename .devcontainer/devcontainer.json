@@ -54,9 +54,17 @@
       ]
     }
   },
+  "postCreateCommand": "uv sync --dev --all-extras",
   "features": {
-    "ghcr.io/devcontainers/features/sshd:1": {
-      "version": "latest"
-    }
+      "ghcr.io/devcontainers/features/common-utils:2": {
+          "username": "openspeleo-core",
+          "installZsh": true,
+          "installOhMyZsh": true,
+          "configureZshAsDefaultShell": false,
+          "upgradePackages": false
+      },
+      "ghcr.io/devcontainers/features/git:1": {
+          "version": "latest"
+      }
   }
 }

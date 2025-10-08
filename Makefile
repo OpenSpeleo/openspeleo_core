@@ -52,6 +52,9 @@ update:
 # INSTALL COMMANDS
 # ============================================================================ #
 
+install:
+	uv sync --dev --all-extras
+
 develop: ## install the package to the active Python's site-packages
 	maturin develop --uv --release
 

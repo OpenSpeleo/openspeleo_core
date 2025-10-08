@@ -1655,7 +1655,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "openspeleo_core"
-version = "0.1.0"
+version = "0.0.4"
 dependencies = [
  "ahash",
  "criterion",
@@ -1665,7 +1665,7 @@ dependencies = [
  "quick-xml",
  "serde",
  "serde_json",
- "zip 4.6.1",
+ "zip 5.1.1",
 ]
 
 [[package]]
@@ -1930,9 +1930,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-stub-gen"
-version = "0.12.2"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "650d9624b551894664cc95867ccfe4fd814a5a225c8fe3a75194a3ae51caae1d"
+checksum = "b93cd67bcfbf726f81cd5d5f2cc85a69e089b4eaa11bb41a6514ad1783fb9355"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1952,9 +1952,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-stub-gen-derive"
-version = "0.12.2"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73947c71903f0e3e31a302a350567594063c75ac155031e40519721429898649"
+checksum = "3f2933be64abedb32a666273e843a1c949e957c18071cf52d543daf4adb2b4e9"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -3675,6 +3675,19 @@ name = "zip"
 version = "4.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "caa8cd6af31c3b31c6631b8f483848b91589021b28fffe50adada48d4f4d2ed1"
+dependencies = [
+ "arbitrary",
+ "crc32fast",
+ "flate2",
+ "indexmap",
+ "memchr",
+]
+
+[[package]]
+name = "zip"
+version = "5.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f852905151ac8d4d06fdca66520a661c09730a74c6d4e2b0f27b436b382e532"
 dependencies = [
  "arbitrary",
  "crc32fast",
