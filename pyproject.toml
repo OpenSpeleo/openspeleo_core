@@ -55,6 +55,11 @@ test = [
     "parameterized>=0.9.0,<0.10",
 ]
 
+[project.urls]
+"Homepage" = "https://pypi.org/project/openspeleo-core/"
+"Bug Reports" = "https://github.com/OpenSpeleo/openspeleo_core/issues"
+"Source" = "https://github.com/OpenSpeleo/openspeleo_core"
+
 [project.scripts]
 openspeleo_core = "openspeleo_core.commands.main:main"
 
