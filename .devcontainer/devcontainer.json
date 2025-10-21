@@ -1,8 +1,8 @@
 {
   "name": "rxml - Dev Container",
   "build": {
-      "context": "..",
-      "dockerfile": "Dockerfile"
+    "context": "..",
+    "dockerfile": "Dockerfile"
   },
   "workspaceFolder": "/workspace/",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/,type=bind",
@@ -50,21 +50,22 @@
         // Ruff
         "charliermarsh.ruff",
         // Rust
-        "rust-lang.rust-analyzer"
+        "rust-lang.rust-analyzer",
+        "dustypomerleau.rust-syntax",
       ]
     }
   },
   "postCreateCommand": "uv sync --dev --all-extras",
   "features": {
-      "ghcr.io/devcontainers/features/common-utils:2": {
-          "username": "openspeleo-core",
-          "installZsh": true,
-          "installOhMyZsh": true,
-          "configureZshAsDefaultShell": false,
-          "upgradePackages": false
-      },
-      "ghcr.io/devcontainers/features/git:1": {
-          "version": "latest"
-      }
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "username": "openspeleo-core",
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "configureZshAsDefaultShell": false,
+      "upgradePackages": false
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    }
   }
 }
