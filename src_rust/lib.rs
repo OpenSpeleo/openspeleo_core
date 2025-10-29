@@ -4,11 +4,13 @@ use pyo3::wrap_pymodule;
 use pyo3_stub_gen::define_stub_info_gatherer;
 
 mod ariane;
+mod compass;
 mod mapping;
 
 #[pymodule]
 fn _rust_lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(ariane::ariane))?;
+    m.add_wrapped(wrap_pymodule!(compass::compass))?;
     m.add_wrapped(wrap_pymodule!(mapping::mapping))?;
     Ok(())
 }
