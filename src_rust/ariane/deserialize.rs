@@ -1,9 +1,6 @@
 use ahash::AHashMap;
-use pyo3::{
-    exceptions::PyValueError,
-    prelude::*,
-    types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString},
-};
+use pyo3::{exceptions::PyValueError, prelude::*};
+use pythonize::pythonize;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::Reader;
 use serde_json::{Map, Value};
@@ -14,10 +11,10 @@ use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
 #[gen_stub_pyfunction(module = "openspeleo_core._rust_lib.ariane")]
 #[pyfunction]
-pub fn xml_str_to_dict(xml_str: &str, keep_null: bool) -> PyResult<PyObject> {
+pub fn xml_str_to_dict(xml_str: &str, keep_null: bool) -> PyResult<Py<PyAny>> {
     let value = parse_xml(xml_str, keep_null)
         .map_err(|e| PyValueError::new_err(format!("XML parsing error: {e}")))?;
-    Python::with_gil(|py| value_to_pyobject(&value, py))
+    Python::attach(|py| Ok(pythonize(py, &value)?.into()))
 }
 
 fn collect_attrs(e: &BytesStart<'_>) -> AHashMap<String, Value> {
@@ -215,40 +212,4 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
         Value::Object(root_obj)
     })
     .ok_or_else(|| "Empty XML document".to_string())
-}
-
-// Function to handle conversion of serde_json::Value
-fn value_to_pyobject(value: &Value, py: Python<'_>) -> PyResult<PyObject> {
-    match value {
-        Value::Null => Ok(py.None()),
-
-        Value::Bool(b) => Ok(PyBool::new(py, *b).to_owned().into()),
-
-        Value::Number(num) => {
-            if let Some(i) = num.as_i64() {
-                Ok(PyInt::new(py, i).into())
-            } else if let Some(f) = num.as_f64() {
-                Ok(PyFloat::new(py, f).into())
-            } else {
-                Err(pyo3::exceptions::PyValueError::new_err("Invalid number"))
-            }
-        }
-        Value::String(s) => Ok(PyString::new(py, s).into()),
-
-        Value::Array(arr) => {
-            // Pre-allocate the PyObject Vec to avoid repeated allocation
-            let mut items = Vec::with_capacity(arr.len());
-            for item in arr {
-                items.push(value_to_pyobject(item, py)?);
-            }
-            Ok(PyList::new(py, items).unwrap().into())
-        }
-        Value::Object(obj) => {
-            let dict = PyDict::new(py);
-            for (k, v) in obj {
-                dict.set_item(k, value_to_pyobject(v, py)?)?;
-            }
-            Ok(dict.into())
-        }
-    }
 }

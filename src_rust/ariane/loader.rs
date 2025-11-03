@@ -15,7 +15,7 @@ use super::deserialize;
 /// The contents of the "Data.xml" file as a string.
 #[gen_stub_pyfunction(module = "openspeleo_core._rust_lib.ariane")]
 #[pyfunction]
-pub fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<PyObject> {
+pub fn load_ariane_tml_file_to_dict(path: &str) -> PyResult<Py<PyAny>> {
     let file = std::fs::File::open(path).map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open file: {e}"))
     })?;

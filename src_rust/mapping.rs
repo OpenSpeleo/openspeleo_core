@@ -8,7 +8,7 @@ pub fn apply_key_mapping(
     py: Python,
     data: Bound<'_, PyAny>,
     mapping: Bound<'_, PyDict>,
-) -> PyResult<PyObject> {
+) -> PyResult<Py<PyAny>> {
     apply_key_mapping_optimized(py, &data, &mapping)
 }
 
@@ -17,7 +17,7 @@ fn apply_key_mapping_optimized(
     py: Python,
     data: &Bound<'_, PyAny>,
     mapping: &Bound<'_, PyDict>,
-) -> PyResult<PyObject> {
+) -> PyResult<Py<PyAny>> {
     // Step 3: Fast type dispatch using raw type pointer comparison
     let data_type = unsafe { pyo3::ffi::Py_TYPE(data.as_ptr()) };
 

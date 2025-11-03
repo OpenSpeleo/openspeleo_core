@@ -7,7 +7,6 @@
 clean: clean-build clean-pyc clean-test clean-stubs  ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
-	rm -rf .venv/
 	rm -rf dist/
 	rm -rf build/
 	rm -rf target/
@@ -17,7 +16,6 @@ clean-build: ## remove build artifacts
 
 clean-stubs:
 	find . -name '*.pyi' -exec rm -f {} +
-
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
