@@ -1804,7 +1804,7 @@ dependencies = [
  "quick-xml",
  "serde",
  "serde_json",
- "zip 6.0.0",
+ "zip 7.0.0",
 ]
 
 [[package]]
@@ -2179,7 +2179,7 @@ dependencies = [
  "rfc2047-decoder",
  "tar",
  "thiserror 2.0.17",
- "zip 6.0.0",
+ "zip 4.6.1",
 ]
 
 [[package]]
@@ -4015,13 +4015,14 @@ dependencies = [
  "flate2",
  "indexmap",
  "memchr",
+ "zopfli",
 ]
 
 [[package]]
 name = "zip"
-version = "6.0.0"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2a05c7c36fde6c09b08576c9f7fb4cda705990f73b58fe011abf7dfb24168b"
+checksum = "bdd8a47718a4ee5fe78e07667cd36f3de80e7c2bfe727c7074245ffc7303c037"
 dependencies = [
  "arbitrary",
  "crc32fast",
