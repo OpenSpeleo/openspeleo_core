@@ -13,7 +13,7 @@ maturin = "1.10.2"
 [dependencies]
 ahash = "0.8.12"
 # Upgrading to 0.38 creates object mismatch errors - Inside `deserialize.rs`
-quick-xml = { version = "0.37.5", features = ["serialize", "overlapped-lists"] }
+quick-xml = { version = "0.38.4", features = ["serialize", "overlapped-lists"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.148"
 pythonize = "0.26.0"
