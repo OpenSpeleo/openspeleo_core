@@ -1722,7 +1722,7 @@ dependencies = [
  "quick-xml",
  "serde",
  "serde_json",
- "zip 7.0.0",
+ "zip 7.2.0",
 ]
 
 [[package]]
@@ -2107,7 +2107,7 @@ dependencies = [
  "rfc2047-decoder",
  "tar",
  "thiserror 2.0.17",
- "zip 4.6.1",
+ "zip 6.0.0",
 ]
 
 [[package]]
@@ -3022,6 +3022,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "typed-path"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e43ffa54726cdc9ea78392023ffe9fe9cf9ac779e1c6fcb0d23f9862e3879d20"
+
+[[package]]
 name = "typenum"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3916,7 +3922,6 @@ dependencies = [
  "flate2",
  "indexmap",
  "memchr",
- "zopfli",
 ]
 
 [[package]]
@@ -3939,15 +3944,15 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "7.0.0"
+version = "7.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdd8a47718a4ee5fe78e07667cd36f3de80e7c2bfe727c7074245ffc7303c037"
+checksum = "c42e33efc22a0650c311c2ef19115ce232583abbe80850bc8b66509ebef02de0"
 dependencies = [
- "arbitrary",
  "crc32fast",
  "flate2",
  "indexmap",
  "memchr",
+ "typed-path",
  "zopfli",
 ]
 
