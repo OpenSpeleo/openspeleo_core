@@ -1,11 +1,25 @@
 use ahash::AHashMap;
 use pyo3::{exceptions::PyValueError, prelude::*};
 use pythonize::pythonize;
-use quick_xml::events::{BytesStart, Event};
+use quick_xml::escape::resolve_predefined_entity;
+use quick_xml::events::{BytesRef, BytesStart, Event};
 use quick_xml::Reader;
 use serde_json::{Map, Value};
 
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
+
+/// Resolves an entity reference to its string representation.
+/// Handles both predefined entities (lt, gt, amp, apos, quot) and character references (&#60; or &#x3C;).
+fn resolve_entity_ref(entity: &BytesRef<'_>) -> Option<String> {
+    // First, try to resolve as a character reference (&#60; or &#x3C;)
+    if let Ok(Some(c)) = entity.resolve_char_ref() {
+        return Some(c.to_string());
+    }
+
+    // Try to resolve as a predefined entity (lt, gt, amp, apos, quot)
+    let entity_name = std::str::from_utf8(entity.as_ref()).ok()?;
+    resolve_predefined_entity(entity_name).map(|s| s.to_string())
+}
 
 // Python bindings with optional null field preservation
 
@@ -40,7 +54,11 @@ fn collect_attrs(e: &BytesStart<'_>) -> AHashMap<String, Value> {
 fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
     // Create a new XML reader with optimizations
     let mut reader = Reader::from_str(xml);
-    reader.config_mut().trim_text(true);
+    // NOTE: trim_text must be false in quick-xml 0.38+ because text is now split across
+    // multiple events (Text + GeneralRef), and trimming each event individually would
+    // lose internal whitespace. We accumulate all fragments first, then trim only
+    // the leading/trailing whitespace from the complete text when flushing the buffer.
+    reader.config_mut().trim_text(false);
     reader.config_mut().check_end_names = false;
     reader.config_mut().expand_empty_elements = false;
 
@@ -51,11 +69,23 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
     let mut current_attrs: AHashMap<String, Value> = AHashMap::default();
     let mut buf = Vec::with_capacity(1024);
     let mut root_name = String::new();
+    // Text accumulator for consecutive Text/GeneralRef events (needed for quick-xml 0.38+)
+    let mut text_buffer = String::new();
 
     loop {
         // Read the next event from the XML reader
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
+                // Flush any accumulated text before processing new element
+                if !text_buffer.is_empty() {
+                    // Trim leading/trailing whitespace from the complete accumulated text
+                    let trimmed = text_buffer.trim();
+                    if !trimmed.is_empty() {
+                        current_value = Some(Value::String(trimmed.to_owned()));
+                    }
+                    text_buffer.clear();
+                }
+
                 // Handle the start of an element
 
                 // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
@@ -75,13 +105,28 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                 current_value = Some(Value::Object(Map::new()));
             }
             Ok(Event::Text(e)) => {
-                // Handle text content
-                let text = e.unescape().unwrap_or_default().to_string();
-                if !text.trim().is_empty() {
-                    current_value = Some(Value::String(text.to_owned()));
+                // Handle text content - accumulate in buffer (quick-xml 0.38+ splits text on entity refs)
+                if let Ok(text) = e.decode() {
+                    text_buffer.push_str(&text);
+                }
+            }
+            Ok(Event::GeneralRef(e)) => {
+                // Handle entity references like &lt; &gt; &amp; etc. (new in quick-xml 0.38+)
+                if let Some(resolved) = resolve_entity_ref(&e) {
+                    text_buffer.push_str(&resolved);
                 }
             }
             Ok(Event::End(_)) => {
+                // Flush any accumulated text before processing end element
+                if !text_buffer.is_empty() {
+                    // Trim leading/trailing whitespace from the complete accumulated text
+                    let trimmed = text_buffer.trim();
+                    if !trimmed.is_empty() {
+                        current_value = Some(Value::String(trimmed.to_owned()));
+                    }
+                    text_buffer.clear();
+                }
+
                 // Handle the end of an element
                 // let (name, parent_val, parent_attrs) = stack.pop().unwrap();
                 let (name, parent_val, parent_attrs) = match stack.pop() {
@@ -139,6 +184,16 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                 }
             }
             Ok(Event::Empty(e)) => {
+                // Flush any accumulated text before processing empty element
+                if !text_buffer.is_empty() {
+                    // Trim leading/trailing whitespace from the complete accumulated text
+                    let trimmed = text_buffer.trim();
+                    if !trimmed.is_empty() {
+                        current_value = Some(Value::String(trimmed.to_owned()));
+                    }
+                    text_buffer.clear();
+                }
+
                 // Handle empty elements
                 // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
                 let name = unsafe { std::str::from_utf8_unchecked(e.name().as_ref()) }.to_string();

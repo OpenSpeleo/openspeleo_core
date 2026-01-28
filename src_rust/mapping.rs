@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyListMethods};
+use pyo3::types::{PyDict, PyDictMethods, PyList, PyListMethods};
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
 #[gen_stub_pyfunction(module = "openspeleo_core._rust_lib.mapping")]
@@ -25,7 +25,7 @@ fn apply_key_mapping_optimized(
         data_type as *const _,
         &raw const pyo3::ffi::PyDict_Type as *const _,
     ) {
-        let dict = data.downcast::<PyDict>()?;
+        let dict = data.cast::<PyDict>()?;
         let result = PyDict::new(py);
 
         // Step 2: Use raw PyDict_Next iteration like Cython does
@@ -69,7 +69,7 @@ fn apply_key_mapping_optimized(
         data_type as *const _,
         &raw const pyo3::ffi::PyList_Type as *const _,
     ) {
-        let list = data.downcast::<PyList>()?;
+        let list = data.cast::<PyList>()?;
         let result = PyList::empty(py);
 
         for item in list {

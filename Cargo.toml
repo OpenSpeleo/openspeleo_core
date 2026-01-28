@@ -12,12 +12,11 @@ maturin = "1.11.5"
 
 [dependencies]
 ahash = "0.8.12"
-# Upgrading to 0.38 creates object mismatch errors - Inside `deserialize.rs`
-quick-xml = { version = "0.37.5", features = ["serialize", "overlapped-lists"] }
+quick-xml = { version = "0.39.0", features = ["serialize", "overlapped-lists"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.149"
-pythonize = "0.26.0"
-pyo3 = { version = "0.26.0", features = ["extension-module", "serde"] }
+pythonize = "0.27.0"
+pyo3 = { version = "0.27.2", features = ["extension-module", "serde"] }
 zip = { version = "7.0.0", default-features = false, features = ["deflate"] }
 # =================== Generate *.pyi stubs files =================== #
 pyo3-stub-gen = "0.18.0"
@@ -27,7 +26,7 @@ criterion = "0.8"
 
 # Windows-only addition
 [target.'cfg(windows)'.dependencies.pyo3]
-version = "0.26.0"
+version = "0.27.2"
 features = ["extension-module", "generate-import-lib"]
 
 [lib]
