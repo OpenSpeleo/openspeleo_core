@@ -33,12 +33,12 @@ dynamic = ["description", "version"] # Version is defined in `Cargo.toml`
 [project.optional-dependencies]
 legacy = ["lxml>=6.0,<7.0", "dicttoxml2>=2.1,<2.2", "xmltodict>=1.0,<1.1"]
 benchmark = [
-    "deepdiff>=7.0,<9.0",
+    "deepdiff>=7.0,<10.0",
     "scipy>=1.15.0,<2.0.0",
     "xmltodict>=1.0,<1.1",
 ]
 test = [
-    "deepdiff>=7.0,<9.0",
+    "deepdiff>=7.0,<10.0",
     "hypothesis>=6.128,<6.152",
     "pytest>=8.0.0,<10.0.0",
     "pytest-cov>=5.0.0,<8.0.0",
