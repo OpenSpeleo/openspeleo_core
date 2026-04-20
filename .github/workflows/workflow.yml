@@ -3,18 +3,20 @@ name: CI
 on:
   push:
     branches:
-      - main
       - master
-    tags:
-      - "*"
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   linter:
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code Repository
@@ -31,6 +33,7 @@ jobs:
             --all-files
 
   test-rust:
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -52,11 +55,13 @@ jobs:
           cargo test --all
 
   test-python:
+    if: github.ref_type != 'tag'
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.11", "3.12", "3.13", "3.14"]
+
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -267,6 +272,43 @@ jobs:
           name: wheels-sdist
           path: dist
           if-no-files-found: error
+
+  trigger-release:
+    name: Trigger release
+    needs:
+      [
+        build-manylinux,
+        build-musllinux,
+        build-windows,
+        build-macos,
+        build-sdist,
+      ]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Fetch latest tags
+        run: git fetch --tags --force
+
+      - name: Dispatch release if commit is tagged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(git tag --points-at HEAD | grep '^v' | head -1)
+          if [ -z "$TAG" ]; then
+            echo "No v* tag on HEAD — skipping release"
+            exit 0
+          fi
+          echo "Found tag $TAG — dispatching release workflow"
+          gh workflow run release.yml --ref "$TAG"
+
 
   publish-release:
     needs:
