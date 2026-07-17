@@ -1,10 +1,12 @@
 # XML to Dict Converter
 
-This Rust library provides functions to convert an XML string to a Python dictionary and back.
+This Rust library provides functions to convert an XML string to a Python
+dictionary and back.
 
 ## Installation
 
 To build the Python package, run:
+
 ```sh
 maturin develop
 ```
