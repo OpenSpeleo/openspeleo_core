@@ -11,6 +11,11 @@ To build the Python package, run:
 maturin develop
 ```
 
+Editable builds explicitly use Cargo's `dev` profile. uv cache invalidation
+includes `pyproject.toml`, `Cargo.toml`, `Cargo.lock`, and every file below
+`src_rust`, so `uv sync` rebuilds the native module when Rust source changes
+without rebuilding it for Python-only edits.
+
 ## Usage
 
 ```python
