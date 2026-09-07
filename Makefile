@@ -43,8 +43,14 @@ clean-test: ## remove test artifacts
 # UPDATE COMMANDS
 # ============================================================================ #
 
+setup:
+	curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+	# cargo install cargo-binstall --locked
+	cargo binstall --locked --no-confirm cargo-outdated
+
 update:
-	cargo update --verbose
+	cargo update --manifest-path Cargo.toml --recursive
+	cargo outdated --workspace --depth 1
 
 # ============================================================================ #
 # INSTALL COMMANDS

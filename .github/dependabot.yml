@@ -20,6 +20,7 @@ updates:
     # Every weekday
     schedule:
       interval: "weekly"
+    versioning-strategy: "widen"
 
   # Enable version updates for Python/Pip - Production
   - package-ecosystem: "cargo"
@@ -30,3 +31,4 @@ updates:
     # Every weekday
     schedule:
       interval: "weekly"
+    versioning-strategy: "increase"

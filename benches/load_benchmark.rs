@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use std::fs;
+use std::hint::black_box;
 use std::io::Read;
 use zip::ZipArchive;
 
@@ -15,11 +16,11 @@ fn benchmark_load_ariane_tml(c: &mut Criterion) {
         "tests/artifacts/test_large.tml",
     ];
 
-    Python::with_gil(|py| {
+    Python::attach(|py| {
         let module = PyModule::import(py, "openspeleo_core.ariane_core").unwrap();
 
         for filepath in test_files {
-            let name = filepath.split('/').last().unwrap_or(filepath);
+            let name = filepath.rsplit('/').next().unwrap_or(filepath);
 
             c.bench_function(&format!("load_tml_{}", name), |b| {
                 b.iter(|| {
@@ -44,7 +45,7 @@ fn benchmark_xml_parsing(c: &mut Criterion) {
     let mut xml_contents = String::new();
     xml_file.read_to_string(&mut xml_contents).unwrap();
 
-    Python::with_gil(|py| {
+    Python::attach(|py| {
         let module = PyModule::import(py, "openspeleo_core._rust_lib.ariane").unwrap();
 
         c.bench_function("xml_str_to_dict", |b| {

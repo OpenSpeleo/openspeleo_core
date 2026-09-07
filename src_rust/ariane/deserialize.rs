@@ -3,7 +3,7 @@ use pyo3::{exceptions::PyValueError, prelude::*};
 use pythonize::pythonize;
 use quick_xml::escape::resolve_predefined_entity;
 use quick_xml::events::{BytesRef, BytesStart, Event};
-use quick_xml::Reader;
+use quick_xml::{Reader, XmlVersion};
 use serde_json::{Map, Value};
 
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
@@ -17,8 +17,7 @@ fn resolve_entity_ref(entity: &BytesRef<'_>) -> Option<String> {
     }
 
     // Try to resolve as a predefined entity (lt, gt, amp, apos, quot)
-    let entity_name = std::str::from_utf8(entity.as_ref()).ok()?;
-    resolve_predefined_entity(entity_name).map(|s| s.to_string())
+    resolve_predefined_entity(entity.as_ref()).map(|s| s.to_string())
 }
 
 // Python bindings with optional null field preservation
@@ -36,14 +35,16 @@ fn collect_attrs(e: &BytesStart<'_>) -> AHashMap<String, Value> {
     let mut map = AHashMap::with_capacity(iter.size_hint().1.unwrap_or(0));
 
     for attr in iter.filter_map(Result::ok) {
-        // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
-        let key = unsafe { std::str::from_utf8_unchecked(attr.key.as_ref()) };
+        let key = attr.key.as_ref();
 
         let mut full_key = String::with_capacity(1 + key.len());
         full_key.push('@');
         full_key.push_str(key);
 
-        let value = attr.unescape_value().unwrap_or_default().into_owned();
+        let value = attr
+            .normalized_value(XmlVersion::Implicit1_0)
+            .unwrap_or_default()
+            .into_owned();
 
         map.insert(full_key, Value::String(value));
     }
@@ -88,8 +89,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
 
                 // Handle the start of an element
 
-                // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
-                let name = unsafe { std::str::from_utf8_unchecked(e.name().as_ref()) }.to_string();
+                let name = e.name().as_ref().to_owned();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
@@ -106,9 +106,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
             }
             Ok(Event::Text(e)) => {
                 // Handle text content - accumulate in buffer (quick-xml 0.38+ splits text on entity refs)
-                if let Ok(text) = e.decode() {
-                    text_buffer.push_str(&text);
-                }
+                text_buffer.push_str(&e.xml_content(XmlVersion::Implicit1_0));
             }
             Ok(Event::GeneralRef(e)) => {
                 // Handle entity references like &lt; &gt; &amp; etc. (new in quick-xml 0.38+)
@@ -195,8 +193,7 @@ fn parse_xml(xml: &str, keep_null: bool) -> Result<Value, String> {
                 }
 
                 // Handle empty elements
-                // Safety: According to XML spec and quick_xml guarantees, element and attribute names are valid UTF-8
-                let name = unsafe { std::str::from_utf8_unchecked(e.name().as_ref()) }.to_string();
+                let name = e.name().as_ref().to_owned();
 
                 // Set the root name if it's not already set
                 if root_name.is_empty() {
