@@ -39,3 +39,8 @@ print(xml_str_back)
 
 assert xml_str_back == xml_str, "Conversion back to XML failed"
 ```
+
+## CI and releases
+
+See the [release guide](docs/releases.md) for workflow responsibilities, tagged
+releases, manual retries, and PyPI Trusted Publisher configuration.
