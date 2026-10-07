@@ -20,8 +20,8 @@ stubs together when the public API changes; test through the Python boundary.
 Keep agent plans, task lists, TODO tracking, progress notes, review notes, and
 scratch lessons outside the repository tree, including all submodules. Use a
 unique task directory under `/tmp/` (for example, create one with
-`mktemp -d /tmp/sdb-openspeleo-core-task.XXXXXX`) or another OS temporary directory whose
-resolved path is outside every checkout.
+`mktemp -d /tmp/sdb-openspeleo-core-task.XXXXXX`) or another OS temporary
+directory whose resolved path is outside every checkout.
 
 Never create or update these working files inside the checkout, even in ignored
 directories such as `tasks/`, `todos/`, or `plans/`. Never stage or commit them.
