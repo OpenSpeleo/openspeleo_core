@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -58,7 +59,8 @@ jobs:
           cargo check --locked
           cargo build --locked
           cargo test --locked --all
-          cargo build --locked --no-default-features --features generate-stubs --bin stub_gen
+          cargo build --locked --no-default-features \
+            --features generate-stubs --bin stub_gen
 
   test-python:
     if: github.ref_type != 'tag'
