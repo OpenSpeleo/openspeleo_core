@@ -1902,7 +1902,7 @@ dependencies = [
  "which",
  "wild",
  "xz2",
- "zip",
+ "zip 8.6.0",
 ]
 
 [[package]]
@@ -2144,7 +2144,7 @@ dependencies = [
  "quick-xml",
  "serde",
  "serde_json",
- "zip",
+ "zip 9.0.0",
 ]
 
 [[package]]
@@ -2585,7 +2585,7 @@ dependencies = [
  "rfc2047-decoder",
  "tar",
  "thiserror 2.0.21",
- "zip",
+ "zip 8.6.0",
 ]
 
 [[package]]
@@ -4380,7 +4380,7 @@ dependencies = [
  "ureq",
  "versions",
  "walkdir",
- "zip",
+ "zip 8.6.0",
 ]
 
 [[package]]
@@ -4513,6 +4513,20 @@ dependencies = [
  "typed-path",
  "zopfli",
  "zstd",
+]
+
+[[package]]
+name = "zip"
+version = "9.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "711e8c9646791c49b7eb799a19c4ae70a9b8372ddc6a1fa4778defd1e2aa5d5e"
+dependencies = [
+ "crc32fast",
+ "flate2",
+ "indexmap",
+ "memchr",
+ "typed-path",
+ "zopfli",
 ]
 
 [[package]]
