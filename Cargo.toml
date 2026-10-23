@@ -7,7 +7,7 @@ version = "0.0.6"
 generate-stubs = []
 
 [build-dependencies]
-maturin = "1.11.5"
+maturin = "1.15.0"
 
 [dependencies]
 ahash = "0.8.12"
@@ -18,7 +18,7 @@ pythonize = "0.29.0"
 # Maturin enables extension-module in pyproject.toml; Cargo binaries and tests
 # must link libpython instead.
 pyo3 = { version = "0.29", features = ["serde"] }
-zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
 # =================== Generate *.pyi stubs files =================== #
 pyo3-stub-gen = "0.23.0"
 
