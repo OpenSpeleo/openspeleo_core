@@ -31,7 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Rust & Cargo
 RUN curl https://sh.rustup.rs -sSf | \
-    sh -s -- --default-toolchain stable -y
+    sh -s -- --default-toolchain 1.99.0 \
+    --profile minimal --component clippy,rustfmt -y
 
 # Install uv.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv

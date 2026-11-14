@@ -43,6 +43,12 @@ jobs:
         with:
           python-version: ${{ env.MINIMUM_PYTHON_VERSION }}
 
+      - name: Select and report the pinned Rust toolchain
+        run: |
+          rustup show
+          rustc --version
+          cargo clippy --version
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -85,6 +91,12 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.MINIMUM_PYTHON_VERSION }}
+
+      - name: Select and report the pinned Rust toolchain
+        run: |
+          rustup show
+          rustc --version
+          cargo clippy --version
 
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -138,6 +150,12 @@ jobs:
           enable-cache: false
           python-version: ${{ matrix.platform.python }}
 
+      - name: Select and report the pinned Rust toolchain
+        run: |
+          rustup show
+          rustc --version
+          cargo clippy --version
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -172,6 +190,12 @@ jobs:
         with:
           python-version: ${{ env.MINIMUM_PYTHON_VERSION }}
 
+      - name: Select and report the pinned Rust toolchain
+        run: |
+          rustup show
+          rustc --version
+          cargo clippy --version
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -194,6 +218,12 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v7
+
+      - name: Select and report the pinned Rust toolchain
+        run: |
+          rustup show
+          rustc --version
+          cargo clippy --version
 
       - name: Build sdist
         uses: PyO3/maturin-action@v1

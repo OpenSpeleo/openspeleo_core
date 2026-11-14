@@ -12,9 +12,16 @@ maturin develop
 ```
 
 Editable builds explicitly use Cargo's `dev` profile. uv cache invalidation
-includes `pyproject.toml`, `Cargo.toml`, `Cargo.lock`, and every file below
-`src_rust`, so `uv sync` rebuilds the native module when Rust source changes
-without rebuilding it for Python-only edits.
+includes `pyproject.toml`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`,
+and every file below `src_rust`, so `uv sync` rebuilds the native module when
+Rust source or the toolchain changes without rebuilding it for Python-only
+edits.
+
+`rust-toolchain.toml` pins the exact Rust release, including Clippy and rustfmt,
+for local development, CI, and release builds. Run Cargo commands from this
+directory so rustup selects that pin. Update it deliberately together with the
+development container images and the monorepo's pin and Compose environment. CI
+reports the selected compiler and Clippy versions.
 
 ## Usage
 

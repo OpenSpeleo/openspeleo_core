@@ -83,7 +83,10 @@ standalone dependency declarations.
 Keep this Cargo project independent; do not add it to a root Cargo workspace.
 Preserve `Cargo.lock`, `uv.lock`, and the `src_python` Maturin layout. Editable
 builds use the explicit `dev` profile. uv cache keys must continue to include
-`pyproject.toml`, `Cargo.toml`, `Cargo.lock`, and `src_rust/**/*`.
+`pyproject.toml`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, and
+`src_rust/**/*`. Run Cargo commands from this repository so rustup selects the
+exact release and components in `rust-toolchain.toml`, matching CI. Keep the pin
+aligned with the development containers when updating it.
 
 For Rust changes, also run the checks used by the standalone CI:
 

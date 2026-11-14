@@ -23,6 +23,12 @@ jobs:
       - name: Checkout Code Repository
         uses: actions/checkout@v7
 
+      - name: Select and report the pinned Rust toolchain
+        run: |
+          rustup show
+          rustc --version
+          cargo clippy --version
+
       - uses: j178/prek-action@v2
         with:
           install-only: true
@@ -43,11 +49,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: update
+      - name: Select and report the pinned Rust toolchain
         run: |
-          rustup update
-          rustup component add clippy
-          rustup install nightly
+          rustup show
+          rustc --version
+          cargo clippy --version
 
       - name: lint
         run: |
@@ -79,6 +85,12 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python }}
+
+      - name: Select and report the pinned Rust toolchain
+        run: |
+          rustup show
+          rustc --version
+          cargo clippy --version
 
       - name: Install the package and test dependencies
         run: |
