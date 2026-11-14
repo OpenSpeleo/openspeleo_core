@@ -27,11 +27,9 @@ cache-keys = [
 
 [dependency-groups]
 dev = [
-    "flit>=4,<5",
     "maturin>=1.9,<2",
     "prek>=0.4,<1",
     "ruff>=0.16,<1",
-    "wheel>=0.45,<1"
 ]
 
 [project]
@@ -49,6 +47,7 @@ classifiers = [
 dependencies = []
 requires-python = ">=3.11"
 dynamic = ["description", "version"] # Version is defined in `Cargo.toml`
+license = "AGPL-3.0-or-later"
 
 [project.optional-dependencies]
 legacy = [

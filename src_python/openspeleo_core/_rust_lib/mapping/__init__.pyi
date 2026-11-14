@@ -7,3 +7,4 @@ __all__ = [
 ]
 
 def apply_key_mapping(data: typing.Any, mapping: dict) -> typing.Any: ...
+
